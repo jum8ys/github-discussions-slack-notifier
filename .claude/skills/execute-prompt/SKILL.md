@@ -1,7 +1,7 @@
 ---
 name: execute-prompt
 description: Execute the instructions written in PROMPT.md. Use when asked to "execute instructions" (指示を実行して).
-allowed-tools: all
+allowed-tools: read, write, edit, bash, glob, grep
 ---
 
 Read PROMPT.md and execute all instructions written in it.
