@@ -78,9 +78,3 @@ jobs:
 2. Look up each username in the mapping JSON
 3. Convert matched usernames to `<@USER_ID>`
 4. Leave unmatched mentions unchanged
-
-## References
-
-- [GitHub Actions](https://docs.github.com/en/actions)
-- [GitHub discussion event](https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#discussion)
-- [Slack Incoming Webhooks](https://api.slack.com/messaging/webhooks)
