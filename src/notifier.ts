@@ -96,57 +96,67 @@ export async function resolveMentionsToSlack(
   }
 }
 
+function mrkdwnSection(text: string): SlackBlock {
+  return { type: 'section', text: { type: 'mrkdwn', text } };
+}
+
+function titleLink(url: string | undefined, title: string): string {
+  return url ? `*<${url}|${title}>*` : `*${title}*`;
+}
+
+function githubUserLink(login: string): string {
+  return `<https://github.com/${login}|${login}>`;
+}
+
+function buildPayload(
+  summaryText: string,
+  headerText: string,
+  body: string,
+  linkUrl: string | undefined,
+  linkLabel: string,
+  color: string
+): SlackPayload {
+  const topBlocks: SlackBlock[] = [mrkdwnSection(headerText)];
+
+  if (body) {
+    const attachmentBlocks: SlackBlock[] = [mrkdwnSection(body)];
+    if (linkUrl) {
+      attachmentBlocks.push(mrkdwnSection(`<${linkUrl}|${linkLabel}>`));
+    }
+    return {
+      text: summaryText,
+      blocks: topBlocks,
+      attachments: [{ color, blocks: attachmentBlocks }],
+    };
+  }
+
+  if (linkUrl) {
+    topBlocks.push(mrkdwnSection(`<${linkUrl}|${linkLabel}>`));
+  }
+  return { text: summaryText, blocks: topBlocks };
+}
+
 export async function buildDiscussionMessage(
   discussion: Discussion,
   mappingFilePath: string
 ): Promise<SlackPayload> {
   const title = discussion.title ?? 'No title';
-  const resolvedBodyText = await resolveMentionsToSlack(
-    discussion.body ?? discussion.body_text ?? '',
-    mappingFilePath
-  );
-  const body = summarize(resolvedBodyText);
   const url = discussion.html_url ?? discussion.url;
   const createdBy = discussion.user?.login ?? 'unknown';
   const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
+  const body = summarize(
+    await resolveMentionsToSlack(discussion.body ?? discussion.body_text ?? '', mappingFilePath)
+  );
 
-  const titleText = url ? `*<${url}|${title}>*` : `*${title}*`;
-  const authorText = `by <https://github.com/${createdBy}|${createdBy}>`;
-
-  const topBlocks: SlackBlock[] = [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `:speech_balloon: *New discussion created*${category}  ${authorText}\n${titleText}`,
-      },
-    },
-  ];
-
-  if (body) {
-    const attachmentBlocks: SlackBlock[] = [
-      { type: 'section', text: { type: 'mrkdwn', text: body } },
-    ];
-    if (url) {
-      attachmentBlocks.push({
-        type: 'section',
-        text: { type: 'mrkdwn', text: `<${url}|View discussion on GitHub>` },
-      });
-    }
-    return {
-      text: `New discussion: ${title}`,
-      blocks: topBlocks,
-      attachments: [{ color: '#28A745', blocks: attachmentBlocks }],
-    };
-  }
-
-  if (url) {
-    topBlocks.push({
-      type: 'section',
-      text: { type: 'mrkdwn', text: `<${url}|View discussion on GitHub>` },
-    });
-  }
-  return { text: `New discussion: ${title}`, blocks: topBlocks };
+  const header = `:speech_balloon: *New discussion created*${category}  by ${githubUserLink(createdBy)}\n${titleLink(url, title)}`;
+  return buildPayload(
+    `New discussion: ${title}`,
+    header,
+    body,
+    url,
+    'View discussion on GitHub',
+    '#28A745'
+  );
 }
 
 export async function buildCommentMessage(
@@ -155,54 +165,22 @@ export async function buildCommentMessage(
   mappingFilePath: string
 ): Promise<SlackPayload> {
   const discussionTitle = discussion.title ?? 'No title';
-  const resolvedBodyText = await resolveMentionsToSlack(
-    comment.body ?? comment.body_text ?? '',
-    mappingFilePath
-  );
-  const body = summarize(resolvedBodyText);
   const commentUrl = comment.html_url ?? comment.url;
   const discussionUrl = discussion.html_url ?? discussion.url;
   const createdBy = comment.user?.login ?? 'unknown';
+  const body = summarize(
+    await resolveMentionsToSlack(comment.body ?? comment.body_text ?? '', mappingFilePath)
+  );
 
-  const titleText = discussionUrl
-    ? `*<${discussionUrl}|${discussionTitle}>*`
-    : `*${discussionTitle}*`;
-  const authorText = `by <https://github.com/${createdBy}|${createdBy}>`;
-
-  const topBlocks: SlackBlock[] = [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `:speech_balloon: *New discussion comment*  ${authorText}\n${titleText}`,
-      },
-    },
-  ];
-
-  if (body) {
-    const attachmentBlocks: SlackBlock[] = [
-      { type: 'section', text: { type: 'mrkdwn', text: body } },
-    ];
-    if (commentUrl) {
-      attachmentBlocks.push({
-        type: 'section',
-        text: { type: 'mrkdwn', text: `<${commentUrl}|View comment on GitHub>` },
-      });
-    }
-    return {
-      text: `New comment on: ${discussionTitle}`,
-      blocks: topBlocks,
-      attachments: [{ color: '#0075DB', blocks: attachmentBlocks }],
-    };
-  }
-
-  if (commentUrl) {
-    topBlocks.push({
-      type: 'section',
-      text: { type: 'mrkdwn', text: `<${commentUrl}|View comment on GitHub>` },
-    });
-  }
-  return { text: `New comment on: ${discussionTitle}`, blocks: topBlocks };
+  const header = `:speech_balloon: *New discussion comment*  by ${githubUserLink(createdBy)}\n${titleLink(discussionUrl, discussionTitle)}`;
+  return buildPayload(
+    `New comment on: ${discussionTitle}`,
+    header,
+    body,
+    commentUrl,
+    'View comment on GitHub',
+    '#0075DB'
+  );
 }
 
 export async function buildAnsweredMessage(
@@ -211,55 +189,23 @@ export async function buildAnsweredMessage(
   mappingFilePath: string
 ): Promise<SlackPayload> {
   const discussionTitle = discussion.title ?? 'No title';
-  const resolvedBodyText = await resolveMentionsToSlack(
-    answer.body ?? answer.body_text ?? '',
-    mappingFilePath
-  );
-  const body = summarize(resolvedBodyText);
   const answerUrl = answer.html_url ?? answer.url;
   const discussionUrl = discussion.html_url ?? discussion.url;
   const answeredBy = answer.user?.login ?? 'unknown';
   const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
+  const body = summarize(
+    await resolveMentionsToSlack(answer.body ?? answer.body_text ?? '', mappingFilePath)
+  );
 
-  const titleText = discussionUrl
-    ? `*<${discussionUrl}|${discussionTitle}>*`
-    : `*${discussionTitle}*`;
-  const authorText = `answered by <https://github.com/${answeredBy}|${answeredBy}>`;
-
-  const topBlocks: SlackBlock[] = [
-    {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: `:white_check_mark: *Discussion answered*${category}  ${authorText}\n${titleText}`,
-      },
-    },
-  ];
-
-  if (body) {
-    const attachmentBlocks: SlackBlock[] = [
-      { type: 'section', text: { type: 'mrkdwn', text: body } },
-    ];
-    if (answerUrl) {
-      attachmentBlocks.push({
-        type: 'section',
-        text: { type: 'mrkdwn', text: `<${answerUrl}|View answer on GitHub>` },
-      });
-    }
-    return {
-      text: `Discussion answered: ${discussionTitle}`,
-      blocks: topBlocks,
-      attachments: [{ color: '#F6B73C', blocks: attachmentBlocks }],
-    };
-  }
-
-  if (answerUrl) {
-    topBlocks.push({
-      type: 'section',
-      text: { type: 'mrkdwn', text: `<${answerUrl}|View answer on GitHub>` },
-    });
-  }
-  return { text: `Discussion answered: ${discussionTitle}`, blocks: topBlocks };
+  const header = `:white_check_mark: *Discussion answered*${category}  answered by ${githubUserLink(answeredBy)}\n${titleLink(discussionUrl, discussionTitle)}`;
+  return buildPayload(
+    `Discussion answered: ${discussionTitle}`,
+    header,
+    body,
+    answerUrl,
+    'View answer on GitHub',
+    '#F6B73C'
+  );
 }
 
 export function sendSlackMessage(webhookUrl: string, payload: SlackPayload): Promise<string> {
