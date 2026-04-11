@@ -3,3 +3,6 @@ node_modules/
 
 # editor
 .vscode/
+
+# local prompt files
+PROMPT.md

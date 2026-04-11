@@ -56,40 +56,69 @@ async function buildDiscussionMessage(discussion, mappingFilePath) {
     const url = discussion.html_url ?? discussion.url;
     const createdBy = discussion.user?.login ?? 'unknown';
     const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
-    const createdAt = discussion.created_at ?? discussion.published_at ?? '';
-    const text = [];
-    text.push(`*New discussion created*${category}`);
-    text.push(`*${title}*`);
-    text.push(`• by *${createdBy}*`);
-    if (createdAt)
-        text.push(`• created at ${createdAt}`);
-    if (body)
-        text.push(`\n${body}`);
-    if (url)
-        text.push(`\n<${url}|View discussion on GitHub>`);
-    return text.join('\n');
+    const titleText = url ? `*<${url}|${title}>*` : `*${title}*`;
+    const authorText = `by <https://github.com/${createdBy}|${createdBy}>`;
+    const blocks = [
+        {
+            type: 'section',
+            text: {
+                type: 'mrkdwn',
+                text: `:speech_balloon: *New discussion created*${category}\n${titleText}`,
+            },
+        },
+        {
+            type: 'context',
+            elements: [{ type: 'mrkdwn', text: authorText }],
+        },
+    ];
+    if (body) {
+        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: body } });
+    }
+    if (url) {
+        blocks.push({
+            type: 'section',
+            text: { type: 'mrkdwn', text: `<${url}|View discussion on GitHub>` },
+        });
+    }
+    return { text: `New discussion: ${title}`, blocks };
 }
 async function buildCommentMessage(comment, discussion, mappingFilePath) {
     const discussionTitle = discussion.title ?? 'No title';
     const resolvedBodyText = await resolveMentionsToSlack(comment.body ?? comment.body_text ?? '', mappingFilePath);
     const body = summarize(resolvedBodyText);
-    const url = comment.html_url ?? comment.url;
+    const commentUrl = comment.html_url ?? comment.url;
+    const discussionUrl = discussion.html_url ?? discussion.url;
     const createdBy = comment.user?.login ?? 'unknown';
-    const createdAt = comment.created_at ?? '';
-    const text = [];
-    text.push('*New discussion comment*');
-    text.push(`*${discussionTitle}*`);
-    text.push(`• by *${createdBy}*`);
-    if (createdAt)
-        text.push(`• created at ${createdAt}`);
-    if (body)
-        text.push(`\n${body}`);
-    if (url)
-        text.push(`\n<${url}|View comment on GitHub>`);
-    return text.join('\n');
+    const titleText = discussionUrl
+        ? `*<${discussionUrl}|${discussionTitle}>*`
+        : `*${discussionTitle}*`;
+    const authorText = `by <https://github.com/${createdBy}|${createdBy}>`;
+    const blocks = [
+        {
+            type: 'section',
+            text: {
+                type: 'mrkdwn',
+                text: `:speech_balloon: *New discussion comment*\n${titleText}`,
+            },
+        },
+        {
+            type: 'context',
+            elements: [{ type: 'mrkdwn', text: authorText }],
+        },
+    ];
+    if (body) {
+        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: body } });
+    }
+    if (commentUrl) {
+        blocks.push({
+            type: 'section',
+            text: { type: 'mrkdwn', text: `<${commentUrl}|View comment on GitHub>` },
+        });
+    }
+    return { text: `New comment on: ${discussionTitle}`, blocks };
 }
-function sendSlackMessage(webhookUrl, message) {
-    const body = JSON.stringify({ text: message });
+function sendSlackMessage(webhookUrl, payload) {
+    const body = JSON.stringify(payload);
     const url = new url_1.URL(webhookUrl);
     const options = {
         hostname: url.hostname,

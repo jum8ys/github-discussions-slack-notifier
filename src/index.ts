@@ -4,6 +4,7 @@ import {
   buildDiscussionMessage,
   Discussion,
   Comment,
+  SlackPayload,
   sendSlackMessage,
 } from './notifier.js';
 
@@ -52,14 +53,14 @@ const payload = JSON.parse(fs.readFileSync(eventPath, 'utf8')) as
   | DiscussionCommentEventPayload;
 
 async function main(): Promise<void> {
-  let message: string;
+  let slackPayload: SlackPayload;
 
   if (eventName === 'discussion' && payload.action === 'created') {
     if (!notifyDiscussionCreated) {
       console.log('Discussion creation notifications are disabled.');
       return;
     }
-    message = await buildDiscussionMessage(
+    slackPayload = await buildDiscussionMessage(
       (payload as DiscussionEventPayload).discussion ?? {},
       mappingFilePath
     );
@@ -69,7 +70,7 @@ async function main(): Promise<void> {
       return;
     }
     const commentPayload = payload as DiscussionCommentEventPayload;
-    message = await buildCommentMessage(
+    slackPayload = await buildCommentMessage(
       commentPayload.comment ?? {},
       commentPayload.discussion ?? {},
       mappingFilePath
@@ -80,7 +81,7 @@ async function main(): Promise<void> {
   }
 
   console.log('Sending Slack notification...');
-  await sendSlackMessage(webhookUrlString, message);
+  await sendSlackMessage(webhookUrlString, slackPayload);
   console.log('Slack notification sent.');
 }
 

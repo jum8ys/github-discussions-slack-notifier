@@ -31,6 +31,16 @@ export interface Comment {
   created_at?: string;
 }
 
+export interface SlackBlock {
+  type: string;
+  [key: string]: unknown;
+}
+
+export interface SlackPayload {
+  text: string;
+  blocks: SlackBlock[];
+}
+
 export function summarize(text: string | undefined, limit = 200): string {
   if (!text) return '';
   const normalized = text.replace(/\r\n/g, '\n').trim();
@@ -81,7 +91,7 @@ export async function resolveMentionsToSlack(
 export async function buildDiscussionMessage(
   discussion: Discussion,
   mappingFilePath: string
-): Promise<string> {
+): Promise<SlackPayload> {
   const title = discussion.title ?? 'No title';
   const resolvedBodyText = await resolveMentionsToSlack(
     discussion.body ?? discussion.body_text ?? '',
@@ -91,45 +101,86 @@ export async function buildDiscussionMessage(
   const url = discussion.html_url ?? discussion.url;
   const createdBy = discussion.user?.login ?? 'unknown';
   const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
-  const createdAt = discussion.created_at ?? discussion.published_at ?? '';
 
-  const text: string[] = [];
-  text.push(`*New discussion created*${category}`);
-  text.push(`*${title}*`);
-  text.push(`• by *${createdBy}*`);
-  if (createdAt) text.push(`• created at ${createdAt}`);
-  if (body) text.push(`\n${body}`);
-  if (url) text.push(`\n<${url}|View discussion on GitHub>`);
-  return text.join('\n');
+  const titleText = url ? `*<${url}|${title}>*` : `*${title}*`;
+  const authorText = `by <https://github.com/${createdBy}|${createdBy}>`;
+
+  const blocks: SlackBlock[] = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `:speech_balloon: *New discussion created*${category}\n${titleText}`,
+      },
+    },
+    {
+      type: 'context',
+      elements: [{ type: 'mrkdwn', text: authorText }],
+    },
+  ];
+
+  if (body) {
+    blocks.push({ type: 'section', text: { type: 'mrkdwn', text: body } });
+  }
+  if (url) {
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: `<${url}|View discussion on GitHub>` },
+    });
+  }
+
+  return { text: `New discussion: ${title}`, blocks };
 }
 
 export async function buildCommentMessage(
   comment: Comment,
   discussion: Discussion,
   mappingFilePath: string
-): Promise<string> {
+): Promise<SlackPayload> {
   const discussionTitle = discussion.title ?? 'No title';
   const resolvedBodyText = await resolveMentionsToSlack(
     comment.body ?? comment.body_text ?? '',
     mappingFilePath
   );
   const body = summarize(resolvedBodyText);
-  const url = comment.html_url ?? comment.url;
+  const commentUrl = comment.html_url ?? comment.url;
+  const discussionUrl = discussion.html_url ?? discussion.url;
   const createdBy = comment.user?.login ?? 'unknown';
-  const createdAt = comment.created_at ?? '';
 
-  const text: string[] = [];
-  text.push('*New discussion comment*');
-  text.push(`*${discussionTitle}*`);
-  text.push(`• by *${createdBy}*`);
-  if (createdAt) text.push(`• created at ${createdAt}`);
-  if (body) text.push(`\n${body}`);
-  if (url) text.push(`\n<${url}|View comment on GitHub>`);
-  return text.join('\n');
+  const titleText = discussionUrl
+    ? `*<${discussionUrl}|${discussionTitle}>*`
+    : `*${discussionTitle}*`;
+  const authorText = `by <https://github.com/${createdBy}|${createdBy}>`;
+
+  const blocks: SlackBlock[] = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `:speech_balloon: *New discussion comment*\n${titleText}`,
+      },
+    },
+    {
+      type: 'context',
+      elements: [{ type: 'mrkdwn', text: authorText }],
+    },
+  ];
+
+  if (body) {
+    blocks.push({ type: 'section', text: { type: 'mrkdwn', text: body } });
+  }
+  if (commentUrl) {
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: `<${commentUrl}|View comment on GitHub>` },
+    });
+  }
+
+  return { text: `New comment on: ${discussionTitle}`, blocks };
 }
 
-export function sendSlackMessage(webhookUrl: string, message: string): Promise<string> {
-  const body = JSON.stringify({ text: message });
+export function sendSlackMessage(webhookUrl: string, payload: SlackPayload): Promise<string> {
+  const body = JSON.stringify(payload);
   const url = new URL(webhookUrl);
 
   const options: https.RequestOptions = {

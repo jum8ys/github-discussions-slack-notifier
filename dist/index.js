@@ -27,13 +27,13 @@ if (!eventPath || !fs_1.default.existsSync(eventPath)) {
 }
 const payload = JSON.parse(fs_1.default.readFileSync(eventPath, 'utf8'));
 async function main() {
-    let message;
+    let slackPayload;
     if (eventName === 'discussion' && payload.action === 'created') {
         if (!notifyDiscussionCreated) {
             console.log('Discussion creation notifications are disabled.');
             return;
         }
-        message = await (0, notifier_js_1.buildDiscussionMessage)(payload.discussion ?? {}, mappingFilePath);
+        slackPayload = await (0, notifier_js_1.buildDiscussionMessage)(payload.discussion ?? {}, mappingFilePath);
     }
     else if (eventName === 'discussion_comment' && payload.action === 'created') {
         if (!notifyCommentCreated) {
@@ -41,14 +41,14 @@ async function main() {
             return;
         }
         const commentPayload = payload;
-        message = await (0, notifier_js_1.buildCommentMessage)(commentPayload.comment ?? {}, commentPayload.discussion ?? {}, mappingFilePath);
+        slackPayload = await (0, notifier_js_1.buildCommentMessage)(commentPayload.comment ?? {}, commentPayload.discussion ?? {}, mappingFilePath);
     }
     else {
         console.log(`Event ${eventName}/${payload.action} is ignored.`);
         return;
     }
     console.log('Sending Slack notification...');
-    await (0, notifier_js_1.sendSlackMessage)(webhookUrlString, message);
+    await (0, notifier_js_1.sendSlackMessage)(webhookUrlString, slackPayload);
     console.log('Slack notification sent.');
 }
 main().catch((error) => {

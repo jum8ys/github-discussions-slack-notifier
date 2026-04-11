@@ -7,7 +7,7 @@ jest.mock('https', () => ({
   request: jest.fn(),
 }));
 
-import { sendSlackMessage } from '../src/notifier';
+import { sendSlackMessage, SlackPayload } from '../src/notifier';
 
 const mockedRequest = https.request as jest.Mock;
 
@@ -17,6 +17,11 @@ function createMockReq(): EventEmitter & { write: jest.Mock; end: jest.Mock } {
   req.end = jest.fn();
   return req;
 }
+
+const testPayload: SlackPayload = {
+  text: 'Hello',
+  blocks: [{ type: 'section', text: { type: 'mrkdwn', text: 'Hello' } }],
+};
 
 describe('sendSlackMessage', () => {
   afterEach(() => {
@@ -37,9 +42,9 @@ describe('sendSlackMessage', () => {
       }
     );
 
-    const result = await sendSlackMessage('https://hooks.slack.com/test', 'Hello');
+    const result = await sendSlackMessage('https://hooks.slack.com/test', testPayload);
     expect(result).toBe('ok');
-    expect(req.write).toHaveBeenCalledWith(JSON.stringify({ text: 'Hello' }));
+    expect(req.write).toHaveBeenCalledWith(JSON.stringify(testPayload));
     expect(req.end).toHaveBeenCalled();
   });
 
@@ -57,7 +62,7 @@ describe('sendSlackMessage', () => {
       }
     );
 
-    await expect(sendSlackMessage('https://hooks.slack.com/test', 'Hello')).rejects.toThrow(
+    await expect(sendSlackMessage('https://hooks.slack.com/test', testPayload)).rejects.toThrow(
       /Slack webhook request failed: 500 internal_error/
     );
   });
@@ -69,7 +74,7 @@ describe('sendSlackMessage', () => {
       return req;
     });
 
-    await expect(sendSlackMessage('https://hooks.slack.com/test', 'Hello')).rejects.toThrow(
+    await expect(sendSlackMessage('https://hooks.slack.com/test', testPayload)).rejects.toThrow(
       'ECONNREFUSED'
     );
   });

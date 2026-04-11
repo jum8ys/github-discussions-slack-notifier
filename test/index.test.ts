@@ -10,6 +10,7 @@ import {
   buildDiscussionMessage,
   extractGitHubMentions,
   resolveMentionsToSlack,
+  SlackPayload,
   summarize,
 } from '../src/notifier';
 
@@ -102,7 +103,7 @@ describe('resolveMentionsToSlack', () => {
 describe('buildDiscussionMessage', () => {
   it('should include title, category, author, body, and link', async () => {
     const mappingPath = writeMappingFile({ 'john-doe': 'U12345678' });
-    const result = await buildDiscussionMessage(
+    const result: SlackPayload = await buildDiscussionMessage(
       {
         title: 'Test Discussion',
         body: 'Hello @john-doe and welcome!',
@@ -113,22 +114,25 @@ describe('buildDiscussionMessage', () => {
       },
       mappingPath
     );
-    expect(result).toContain('*New discussion created* (General)');
-    expect(result).toContain('*Test Discussion*');
-    expect(result).toContain('*testuser*');
-    expect(result).toContain('Hello <@U12345678> and welcome!');
-    expect(result).toContain(
+    const blocksText = JSON.stringify(result.blocks);
+    expect(result.text).toContain('Test Discussion');
+    expect(blocksText).toContain('*New discussion created* (General)');
+    expect(blocksText).toContain('<https://github.com/org/repo/discussions/123|Test Discussion>');
+    expect(blocksText).toContain('<https://github.com/testuser|testuser>');
+    expect(blocksText).toContain('Hello <@U12345678> and welcome!');
+    expect(blocksText).toContain(
       '<https://github.com/org/repo/discussions/123|View discussion on GitHub>'
     );
   });
 
   it('should use fallback values when fields are missing', async () => {
     const mappingPath = writeMappingFile({});
-    const result = await buildDiscussionMessage({}, mappingPath);
-    expect(result).toContain('*New discussion created*');
-    expect(result).toContain('No title');
-    expect(result).toContain('unknown');
-    expect(result).not.toContain('View discussion on GitHub');
+    const result: SlackPayload = await buildDiscussionMessage({}, mappingPath);
+    const blocksText = JSON.stringify(result.blocks);
+    expect(blocksText).toContain('*New discussion created*');
+    expect(blocksText).toContain('No title');
+    expect(blocksText).toContain('<https://github.com/unknown|unknown>');
+    expect(blocksText).not.toContain('View discussion on GitHub');
   });
 });
 
@@ -136,31 +140,37 @@ describe('buildDiscussionMessage', () => {
 describe('buildCommentMessage', () => {
   it('should include discussion title, author, body, and link', async () => {
     const mappingPath = writeMappingFile({ commenter: 'U99999999' });
-    const result = await buildCommentMessage(
+    const result: SlackPayload = await buildCommentMessage(
       {
         body: 'Test comment by @commenter',
         html_url: 'https://github.com/org/repo/discussions/123#discussioncomment-456',
         user: { login: 'commenter' },
         created_at: '2024-01-01T12:00:00Z',
       },
-      { title: 'Discussion Title' },
+      {
+        title: 'Discussion Title',
+        html_url: 'https://github.com/org/repo/discussions/123',
+      },
       mappingPath
     );
-    expect(result).toContain('*New discussion comment*');
-    expect(result).toContain('*Discussion Title*');
-    expect(result).toContain('*commenter*');
-    expect(result).toContain('Test comment by <@U99999999>');
-    expect(result).toContain(
+    const blocksText = JSON.stringify(result.blocks);
+    expect(result.text).toContain('Discussion Title');
+    expect(blocksText).toContain('*New discussion comment*');
+    expect(blocksText).toContain('<https://github.com/org/repo/discussions/123|Discussion Title>');
+    expect(blocksText).toContain('<https://github.com/commenter|commenter>');
+    expect(blocksText).toContain('Test comment by <@U99999999>');
+    expect(blocksText).toContain(
       '<https://github.com/org/repo/discussions/123#discussioncomment-456|View comment on GitHub>'
     );
   });
 
   it('should use fallback values when fields are missing', async () => {
     const mappingPath = writeMappingFile({});
-    const result = await buildCommentMessage({}, {}, mappingPath);
-    expect(result).toContain('*New discussion comment*');
-    expect(result).toContain('No title');
-    expect(result).toContain('unknown');
-    expect(result).not.toContain('View comment on GitHub');
+    const result: SlackPayload = await buildCommentMessage({}, {}, mappingPath);
+    const blocksText = JSON.stringify(result.blocks);
+    expect(blocksText).toContain('*New discussion comment*');
+    expect(blocksText).toContain('No title');
+    expect(blocksText).toContain('<https://github.com/unknown|unknown>');
+    expect(blocksText).not.toContain('View comment on GitHub');
   });
 });
