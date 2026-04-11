@@ -61,11 +61,26 @@ Consult these official docs before making implementation changes:
 
 - README should stay user-facing and describe only how to use this action from another repository.
 - Developer and release workflow notes belong in `AGENTS.md`, not `README.md`.
-- Publish reusable action versions with Git tags such as `v1.0.0`, and move the major tag `v1` to the latest compatible release.
+- `PROMPT.md` is gitignored and must never be committed.
+
+### Semantic versioning
+
+Follow [Semantic Versioning](https://semver.org/):
+
+| Change type | Example | Version bump |
+|---|---|---|
+| Bug fix, dependency update | fix typo, patch dependency | `v1.0.0` → `v1.0.1` |
+| New feature, non-breaking change | add Block Kit UI, new input | `v1.0.0` → `v1.1.0` |
+| Breaking change | rename input, change behavior | `v1.0.0` → `v2.0.0` |
+
+**Always decide the correct version bump before tagging. When in doubt, re-read this table.**
+
+### Tagging and pushing
 
 ```bash
-git tag -a v1.0.0 -m "Release v1.0.0"
-git tag -f v1
-git push origin v1.0.0
-git push origin v1 --force
+# Replace vX.Y.Z with the correct version
+git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git tag -f vX          # move the major tag (v1, v2, ...) to latest
+git push origin vX.Y.Z
+git push origin vX --force
 ```
