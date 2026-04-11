@@ -14,7 +14,7 @@ To use it externally, reference a published tag such as `@v2` or `@v2.0.0`.
 - Converts GitHub `@mentions` to Slack mentions
 - Supports mapping from an inline JSON secret or a repository file
 
-## Quick Start (Direct Action)
+## Quick Start
 
 ### 1. Add secrets
 
@@ -63,18 +63,17 @@ jobs:
         with:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
           slack_user_mapping_json: ${{ secrets.SLACK_USER_MAPPING_JSON }}
-          slack_user_mapping_file: '.github/github-username-slack-mapping.json'
 ```
+
+> `slack_user_mapping_json` と `slack_user_mapping_file` の両方を指定した場合は、JSON 入力が優先されます。
 
 ## Action Inputs
 
 | Input | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | slack_webhook_url | string | yes | - | Slack Incoming Webhook URL |
-| slack_user_mapping_json | string | no | - | Inline JSON for GitHub username -> Slack user ID mapping (recommended for secrets) |
+| slack_user_mapping_json | string | no | - | Inline JSON for GitHub username -> Slack user ID mapping. Takes precedence over `slack_user_mapping_file` if both are set. |
 | slack_user_mapping_file | string | no | .github/github-username-slack-mapping.json | Path to the GitHub username -> Slack user ID mapping JSON |
-
-If both JSON and file inputs are set, the JSON input is used.
 
 ## How Mention Conversion Works
 
