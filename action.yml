@@ -24,6 +24,10 @@ inputs:
     description: 'Notify on new discussion comments.'
     required: false
     default: 'true'
+  notify_answered:
+    description: 'Notify when a discussion is marked as answered.'
+    required: false
+    default: 'true'
 
 runs:
   using: 'node20'

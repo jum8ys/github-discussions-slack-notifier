@@ -6,6 +6,7 @@ import os from 'os';
 import path from 'path';
 
 import {
+  buildAnsweredMessage,
   buildCommentMessage,
   buildDiscussionMessage,
   extractGitHubMentions,
@@ -13,7 +14,6 @@ import {
   SlackPayload,
   summarize,
 } from '../src/notifier';
-
 function writeMappingFile(mapping: Record<string, string>): string {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gdsn-'));
   const mappingPath = path.join(tmpDir, 'mapping.json');
@@ -114,7 +114,8 @@ describe('buildDiscussionMessage', () => {
       },
       mappingPath
     );
-    const blocksText = JSON.stringify(result.blocks);
+    const blocksText = JSON.stringify(result.attachments[0].blocks);
+    expect(result.attachments[0].color).toBe('#28A745');
     expect(result.text).toContain('Test Discussion');
     expect(blocksText).toContain('*New discussion created* (General)');
     expect(blocksText).toContain('<https://github.com/org/repo/discussions/123|Test Discussion>');
@@ -128,7 +129,7 @@ describe('buildDiscussionMessage', () => {
   it('should use fallback values when fields are missing', async () => {
     const mappingPath = writeMappingFile({});
     const result: SlackPayload = await buildDiscussionMessage({}, mappingPath);
-    const blocksText = JSON.stringify(result.blocks);
+    const blocksText = JSON.stringify(result.attachments[0].blocks);
     expect(blocksText).toContain('*New discussion created*');
     expect(blocksText).toContain('No title');
     expect(blocksText).toContain('<https://github.com/unknown|unknown>');
@@ -153,7 +154,8 @@ describe('buildCommentMessage', () => {
       },
       mappingPath
     );
-    const blocksText = JSON.stringify(result.blocks);
+    const blocksText = JSON.stringify(result.attachments[0].blocks);
+    expect(result.attachments[0].color).toBe('#0075DB');
     expect(result.text).toContain('Discussion Title');
     expect(blocksText).toContain('*New discussion comment*');
     expect(blocksText).toContain('<https://github.com/org/repo/discussions/123|Discussion Title>');
@@ -167,10 +169,50 @@ describe('buildCommentMessage', () => {
   it('should use fallback values when fields are missing', async () => {
     const mappingPath = writeMappingFile({});
     const result: SlackPayload = await buildCommentMessage({}, {}, mappingPath);
-    const blocksText = JSON.stringify(result.blocks);
+    const blocksText = JSON.stringify(result.attachments[0].blocks);
     expect(blocksText).toContain('*New discussion comment*');
     expect(blocksText).toContain('No title');
     expect(blocksText).toContain('<https://github.com/unknown|unknown>');
     expect(blocksText).not.toContain('View comment on GitHub');
+  });
+});
+
+// Test answered message building logic
+describe('buildAnsweredMessage', () => {
+  it('should include discussion title, answerer, body, and link', async () => {
+    const mappingPath = writeMappingFile({ answerer: 'U77777777' });
+    const result: SlackPayload = await buildAnsweredMessage(
+      {
+        body: 'This solves it @answerer',
+        html_url: 'https://github.com/org/repo/discussions/123#discussioncomment-789',
+        user: { login: 'answerer' },
+      },
+      {
+        title: 'How to do X?',
+        html_url: 'https://github.com/org/repo/discussions/123',
+        category: { name: 'Q&A' },
+      },
+      mappingPath
+    );
+    const blocksText = JSON.stringify(result.attachments[0].blocks);
+    expect(result.attachments[0].color).toBe('#F6B73C');
+    expect(result.text).toContain('How to do X?');
+    expect(blocksText).toContain('*Discussion answered* (Q&A)');
+    expect(blocksText).toContain('<https://github.com/org/repo/discussions/123|How to do X?>');
+    expect(blocksText).toContain('<https://github.com/answerer|answerer>');
+    expect(blocksText).toContain('This solves it <@U77777777>');
+    expect(blocksText).toContain(
+      '<https://github.com/org/repo/discussions/123#discussioncomment-789|View answer on GitHub>'
+    );
+  });
+
+  it('should use fallback values when fields are missing', async () => {
+    const mappingPath = writeMappingFile({});
+    const result: SlackPayload = await buildAnsweredMessage({}, {}, mappingPath);
+    const blocksText = JSON.stringify(result.attachments[0].blocks);
+    expect(blocksText).toContain('*Discussion answered*');
+    expect(blocksText).toContain('No title');
+    expect(blocksText).toContain('<https://github.com/unknown|unknown>');
+    expect(blocksText).not.toContain('View answer on GitHub');
   });
 });

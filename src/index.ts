@@ -1,9 +1,11 @@
 import fs from 'fs';
 import {
+  buildAnsweredMessage,
   buildCommentMessage,
   buildDiscussionMessage,
   Discussion,
   Comment,
+  Answer,
   SlackPayload,
   sendSlackMessage,
 } from './notifier.js';
@@ -11,6 +13,7 @@ import {
 interface DiscussionEventPayload {
   action?: string;
   discussion?: Discussion;
+  answer?: Answer;
 }
 
 interface DiscussionCommentEventPayload {
@@ -33,6 +36,8 @@ const notifyDiscussionCreated =
 const notifyCommentCreated =
   (process.env.INPUT_NOTIFY_COMMENT_CREATED ?? process.env.NOTIFY_COMMENT_CREATED ?? 'true') ===
   'true';
+const notifyAnswered =
+  (process.env.INPUT_NOTIFY_ANSWERED ?? process.env.NOTIFY_ANSWERED ?? 'true') === 'true';
 
 if (!webhookUrl) {
   console.error(
@@ -62,6 +67,17 @@ async function main(): Promise<void> {
     }
     slackPayload = await buildDiscussionMessage(
       (payload as DiscussionEventPayload).discussion ?? {},
+      mappingFilePath
+    );
+  } else if (eventName === 'discussion' && payload.action === 'answered') {
+    if (!notifyAnswered) {
+      console.log('Discussion answered notifications are disabled.');
+      return;
+    }
+    const answeredPayload = payload as DiscussionEventPayload;
+    slackPayload = await buildAnsweredMessage(
+      answeredPayload.answer ?? {},
+      answeredPayload.discussion ?? {},
       mappingFilePath
     );
   } else if (eventName === 'discussion_comment' && payload.action === 'created') {

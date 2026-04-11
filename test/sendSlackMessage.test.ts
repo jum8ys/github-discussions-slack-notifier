@@ -20,7 +20,9 @@ function createMockReq(): EventEmitter & { write: jest.Mock; end: jest.Mock } {
 
 const testPayload: SlackPayload = {
   text: 'Hello',
-  blocks: [{ type: 'section', text: { type: 'mrkdwn', text: 'Hello' } }],
+  attachments: [
+    { color: '#0075DB', blocks: [{ type: 'section', text: { type: 'mrkdwn', text: 'Hello' } }] },
+  ],
 };
 
 describe('sendSlackMessage', () => {

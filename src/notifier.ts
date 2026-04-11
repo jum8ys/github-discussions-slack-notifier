@@ -31,14 +31,21 @@ export interface Comment {
   created_at?: string;
 }
 
+export type Answer = Comment;
+
 export interface SlackBlock {
   type: string;
   [key: string]: unknown;
 }
 
+export interface SlackAttachment {
+  color: string;
+  blocks: SlackBlock[];
+}
+
 export interface SlackPayload {
   text: string;
-  blocks: SlackBlock[];
+  attachments: SlackAttachment[];
 }
 
 export function summarize(text: string | undefined, limit = 200): string {
@@ -129,7 +136,7 @@ export async function buildDiscussionMessage(
     });
   }
 
-  return { text: `New discussion: ${title}`, blocks };
+  return { text: `New discussion: ${title}`, attachments: [{ color: '#28A745', blocks }] };
 }
 
 export async function buildCommentMessage(
@@ -176,7 +183,61 @@ export async function buildCommentMessage(
     });
   }
 
-  return { text: `New comment on: ${discussionTitle}`, blocks };
+  return {
+    text: `New comment on: ${discussionTitle}`,
+    attachments: [{ color: '#0075DB', blocks }],
+  };
+}
+
+export async function buildAnsweredMessage(
+  answer: Answer,
+  discussion: Discussion,
+  mappingFilePath: string
+): Promise<SlackPayload> {
+  const discussionTitle = discussion.title ?? 'No title';
+  const resolvedBodyText = await resolveMentionsToSlack(
+    answer.body ?? answer.body_text ?? '',
+    mappingFilePath
+  );
+  const body = summarize(resolvedBodyText);
+  const answerUrl = answer.html_url ?? answer.url;
+  const discussionUrl = discussion.html_url ?? discussion.url;
+  const answeredBy = answer.user?.login ?? 'unknown';
+  const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
+
+  const titleText = discussionUrl
+    ? `*<${discussionUrl}|${discussionTitle}>*`
+    : `*${discussionTitle}*`;
+  const authorText = `answered by <https://github.com/${answeredBy}|${answeredBy}>`;
+
+  const blocks: SlackBlock[] = [
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: `:white_check_mark: *Discussion answered*${category}\n${titleText}`,
+      },
+    },
+    {
+      type: 'context',
+      elements: [{ type: 'mrkdwn', text: authorText }],
+    },
+  ];
+
+  if (body) {
+    blocks.push({ type: 'section', text: { type: 'mrkdwn', text: body } });
+  }
+  if (answerUrl) {
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: `<${answerUrl}|View answer on GitHub>` },
+    });
+  }
+
+  return {
+    text: `Discussion answered: ${discussionTitle}`,
+    attachments: [{ color: '#F6B73C', blocks }],
+  };
 }
 
 export function sendSlackMessage(webhookUrl: string, payload: SlackPayload): Promise<string> {

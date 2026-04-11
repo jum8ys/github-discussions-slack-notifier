@@ -8,6 +8,7 @@ exports.extractGitHubMentions = extractGitHubMentions;
 exports.resolveMentionsToSlack = resolveMentionsToSlack;
 exports.buildDiscussionMessage = buildDiscussionMessage;
 exports.buildCommentMessage = buildCommentMessage;
+exports.buildAnsweredMessage = buildAnsweredMessage;
 exports.sendSlackMessage = sendSlackMessage;
 const fs_1 = __importDefault(require("fs"));
 const https_1 = __importDefault(require("https"));
@@ -80,7 +81,7 @@ async function buildDiscussionMessage(discussion, mappingFilePath) {
             text: { type: 'mrkdwn', text: `<${url}|View discussion on GitHub>` },
         });
     }
-    return { text: `New discussion: ${title}`, blocks };
+    return { text: `New discussion: ${title}`, attachments: [{ color: '#28A745', blocks }] };
 }
 async function buildCommentMessage(comment, discussion, mappingFilePath) {
     const discussionTitle = discussion.title ?? 'No title';
@@ -115,7 +116,49 @@ async function buildCommentMessage(comment, discussion, mappingFilePath) {
             text: { type: 'mrkdwn', text: `<${commentUrl}|View comment on GitHub>` },
         });
     }
-    return { text: `New comment on: ${discussionTitle}`, blocks };
+    return {
+        text: `New comment on: ${discussionTitle}`,
+        attachments: [{ color: '#0075DB', blocks }],
+    };
+}
+async function buildAnsweredMessage(answer, discussion, mappingFilePath) {
+    const discussionTitle = discussion.title ?? 'No title';
+    const resolvedBodyText = await resolveMentionsToSlack(answer.body ?? answer.body_text ?? '', mappingFilePath);
+    const body = summarize(resolvedBodyText);
+    const answerUrl = answer.html_url ?? answer.url;
+    const discussionUrl = discussion.html_url ?? discussion.url;
+    const answeredBy = answer.user?.login ?? 'unknown';
+    const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
+    const titleText = discussionUrl
+        ? `*<${discussionUrl}|${discussionTitle}>*`
+        : `*${discussionTitle}*`;
+    const authorText = `answered by <https://github.com/${answeredBy}|${answeredBy}>`;
+    const blocks = [
+        {
+            type: 'section',
+            text: {
+                type: 'mrkdwn',
+                text: `:white_check_mark: *Discussion answered*${category}\n${titleText}`,
+            },
+        },
+        {
+            type: 'context',
+            elements: [{ type: 'mrkdwn', text: authorText }],
+        },
+    ];
+    if (body) {
+        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: body } });
+    }
+    if (answerUrl) {
+        blocks.push({
+            type: 'section',
+            text: { type: 'mrkdwn', text: `<${answerUrl}|View answer on GitHub>` },
+        });
+    }
+    return {
+        text: `Discussion answered: ${discussionTitle}`,
+        attachments: [{ color: '#F6B73C', blocks }],
+    };
 }
 function sendSlackMessage(webhookUrl, payload) {
     const body = JSON.stringify(payload);
