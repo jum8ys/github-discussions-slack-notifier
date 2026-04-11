@@ -23,7 +23,7 @@ This repository is a **GitHub Action** (defined in `action.yml`) plus an optiona
 
 - **Entrypoint**: `src/index.ts` → reads `GITHUB_EVENT_PATH`, dispatches to `notifier.ts` builders, then POSTs to Slack.
 - **Core logic**: `src/notifier.ts` — message formatting (`buildDiscussionMessage`, `buildCommentMessage`), text summarization (`summarize`), GitHub-to-Slack mention conversion (`extractGitHubMentions`, `resolveMentionsToSlack`), and the HTTP sender (`sendSlackMessage`).
-- **Mention mapping**: A JSON file (default `.github/github-username-slack-mapping.json`) maps GitHub usernames to Slack user IDs. No Slack API call is made; mapping is file-based only.
+- **Mention mapping**: GitHub usernames are mapped to Slack user IDs via `slack_user_mapping_json` (inline JSON, usually from a secret) or `slack_user_mapping_file` (default `.github/github-username-slack-mapping.json`). No Slack API call is made.
 - **Slack transport**: Raw `https.request` to an Incoming Webhook URL — no Slack SDK dependency.
 
 Flow: `Actions event → index.ts (env/payload parsing) → notifier.ts (build message + resolve mentions) → Slack webhook`
@@ -41,12 +41,13 @@ Flow: `Actions event → index.ts (env/payload parsing) → notifier.ts (build m
 
 The action handles the following GitHub event types:
 
-| Event | Action | Flag |
-|---|---|---|
-| `discussion` | `created` | `notify_discussion_created` |
-| `discussion` | `answered` | `notify_answered` |
-| `discussion_comment` | `created` | `notify_comment_created` |
+| Event | Action |
+|---|---|
+| `discussion` | `created` |
+| `discussion` | `answered` |
+| `discussion_comment` | `created` |
 
+Notification scope is controlled by workflow `on:` triggers (there are no `notify_*` inputs).
 Other event/action combinations are silently ignored.
 
 ## Reference Documentation
