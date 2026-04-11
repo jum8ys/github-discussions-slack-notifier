@@ -65,7 +65,7 @@ jobs:
           slack_user_mapping_json: ${{ secrets.SLACK_USER_MAPPING_JSON }}
 ```
 
-> `slack_user_mapping_json` と `slack_user_mapping_file` の両方を指定した場合は、JSON 入力が優先されます。
+> If both `slack_user_mapping_json` and `slack_user_mapping_file` are set, the JSON input takes precedence.
 
 ## Action Inputs
 
