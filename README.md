@@ -5,7 +5,7 @@ It can convert GitHub `@mentions` into Slack mentions using inline JSON or a map
 
 This repository is intended to be used from other repositories.
 
-To use it externally, reference a published tag such as `@v1` or `@v1.0.0`.
+To use it externally, reference a published tag such as `@v2` or `@v2.0.0`.
 
 ## Features
 
@@ -59,7 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Notify Slack
-        uses: jum8ys/github-discussions-slack-notifier@v1
+        uses: jum8ys/github-discussions-slack-notifier@v2
         with:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
           slack_user_mapping_json: ${{ secrets.SLACK_USER_MAPPING_JSON }}
@@ -86,7 +86,7 @@ If both JSON and file inputs are set, the JSON input is used.
 ## Versioning Recommendation
 
 - Use a tag or commit SHA instead of `@main`
-- Example: `@v1` or `@v1.0.0`
+- Example: `@v2` or `@v2.0.0`
 
 If you want to use this action from a different repository, this repository must also be accessible to that repository (for example, public).
 
