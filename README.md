@@ -79,13 +79,6 @@ jobs:
 3. Convert matched usernames to `<@USER_ID>`
 4. Leave unmatched mentions unchanged
 
-## Versioning Recommendation
-
-- Use a tag or commit SHA instead of `@main`
-- Example: `@v2` or `@v2.0.0`
-
-If you want to use this action from a different repository, this repository must also be accessible to that repository (for example, public).
-
 ## References
 
 - [GitHub Actions](https://docs.github.com/en/actions)
