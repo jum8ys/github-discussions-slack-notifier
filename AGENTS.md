@@ -85,3 +85,5 @@ git tag -f vX          # move the major tag (v1, v2, ...) to latest
 git push origin vX.Y.Z
 git push -f origin vX
 ```
+
+To release, say **"publish"** or **"release"** — the `publish` skill will handle the rest.
