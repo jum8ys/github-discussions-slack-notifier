@@ -1,0 +1,37 @@
+name: Notify GitHub Discussions to Slack
+
+on:
+  workflow_call:
+    inputs:
+      github_username_slack_mapping:
+        description: 'Path to JSON file with GitHub username to Slack user ID mapping.'
+        required: false
+        type: string
+        default: '.github/github-username-slack-mapping.json'
+      notify_discussion_created:
+        description: 'Notify on new discussions.'
+        required: false
+        type: string
+        default: 'true'
+      notify_comment_created:
+        description: 'Notify on new discussion comments.'
+        required: false
+        type: string
+        default: 'true'
+    secrets:
+      SLACK_WEBHOOK_URL:
+        required: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout caller repository
+        uses: actions/checkout@v6
+      - name: Notify Slack
+        uses: jum8ys/github-discussions-slack-notifier@v1
+        with:
+          slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          github_username_slack_mapping: ${{ inputs.github_username_slack_mapping }}
+          notify_discussion_created: ${{ inputs.notify_discussion_created }}
+          notify_comment_created: ${{ inputs.notify_comment_created }}

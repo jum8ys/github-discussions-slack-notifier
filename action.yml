@@ -1,0 +1,30 @@
+name: GitHub Discussions Slack Notifier
+
+description: Send Slack notifications when GitHub Discussions are created or discussed. Converts @mentions from GitHub to Slack automatically.
+
+author: 'jum8ys'
+
+branding:
+  icon: 'bell'
+  color: 'blue'
+
+inputs:
+  slack_webhook_url:
+    description: 'Slack Incoming Webhook URL.'
+    required: true
+  github_username_slack_mapping:
+    description: 'Path to JSON file with GitHub username to Slack user ID mapping (e.g., .github/github-username-slack-mapping.json).'
+    required: false
+    default: '.github/github-username-slack-mapping.json'
+  notify_discussion_created:
+    description: 'Notify on new discussions.'
+    required: false
+    default: 'true'
+  notify_comment_created:
+    description: 'Notify on new discussion comments.'
+    required: false
+    default: 'true'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
