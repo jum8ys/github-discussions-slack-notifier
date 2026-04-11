@@ -1,7 +1,7 @@
 ---
 name: publish
 description: Release a new version of this action. Use when asked to publish, release, or tag a new version.
-allowed-tools: shell
+allowed-tools: bash, read, edit
 ---
 
 Execute the following release steps:
