@@ -64,12 +64,8 @@ async function buildDiscussionMessage(discussion, mappingFilePath) {
             type: 'section',
             text: {
                 type: 'mrkdwn',
-                text: `:speech_balloon: *New discussion created*${category}\n${titleText}`,
+                text: `:speech_balloon: *New discussion created*${category}  ${authorText}\n${titleText}`,
             },
-        },
-        {
-            type: 'context',
-            elements: [{ type: 'mrkdwn', text: authorText }],
         },
     ];
     if (body) {
@@ -112,12 +108,8 @@ async function buildCommentMessage(comment, discussion, mappingFilePath) {
             type: 'section',
             text: {
                 type: 'mrkdwn',
-                text: `:speech_balloon: *New discussion comment*\n${titleText}`,
+                text: `:speech_balloon: *New discussion comment*  ${authorText}\n${titleText}`,
             },
-        },
-        {
-            type: 'context',
-            elements: [{ type: 'mrkdwn', text: authorText }],
         },
     ];
     if (body) {
@@ -161,12 +153,8 @@ async function buildAnsweredMessage(answer, discussion, mappingFilePath) {
             type: 'section',
             text: {
                 type: 'mrkdwn',
-                text: `:white_check_mark: *Discussion answered*${category}\n${titleText}`,
+                text: `:white_check_mark: *Discussion answered*${category}  ${authorText}\n${titleText}`,
             },
-        },
-        {
-            type: 'context',
-            elements: [{ type: 'mrkdwn', text: authorText }],
         },
     ];
     if (body) {
