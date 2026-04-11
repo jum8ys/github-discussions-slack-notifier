@@ -21,9 +21,9 @@ To use it externally, reference a published tag such as `@v1` or `@v1.0.0`.
 Add the following secret to the repository that will use this action:
 
 - `SLACK_WEBHOOK_URL`
-- `GITHUB_TO_SLACK_USER_MAPPING_JSON` (optional, recommended for private mapping)
+- `SLACK_USER_MAPPING_JSON` (optional, recommended for private mapping)
 
-Example value for `GITHUB_TO_SLACK_USER_MAPPING_JSON`:
+Example value for `SLACK_USER_MAPPING_JSON`:
 
 ```json
 {"john-doe":"UXXXXXXXX","jane-smith":"UYYYYYYYY"}
@@ -62,8 +62,8 @@ jobs:
         uses: jum8ys/github-discussions-slack-notifier@v1
         with:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          github_to_slack_user_mapping_json: ${{ secrets.GITHUB_TO_SLACK_USER_MAPPING_JSON }}
-          github_to_slack_user_mapping_file: '.github/github-username-slack-mapping.json'
+          slack_user_mapping_json: ${{ secrets.SLACK_USER_MAPPING_JSON }}
+          slack_user_mapping_file: '.github/github-username-slack-mapping.json'
 ```
 
 ## Action Inputs
@@ -71,8 +71,8 @@ jobs:
 | Input | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | slack_webhook_url | string | yes | - | Slack Incoming Webhook URL |
-| github_to_slack_user_mapping_json | string | no | - | Inline JSON for GitHub username -> Slack user ID mapping (recommended for secrets) |
-| github_to_slack_user_mapping_file | string | no | .github/github-username-slack-mapping.json | Path to the GitHub username -> Slack user ID mapping JSON |
+| slack_user_mapping_json | string | no | - | Inline JSON for GitHub username -> Slack user ID mapping (recommended for secrets) |
+| slack_user_mapping_file | string | no | .github/github-username-slack-mapping.json | Path to the GitHub username -> Slack user ID mapping JSON |
 
 If both JSON and file inputs are set, the JSON input is used.
 
