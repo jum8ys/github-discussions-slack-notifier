@@ -78,6 +78,9 @@ Follow [Semantic Versioning](https://semver.org/):
 
 ### Tagging and pushing
 
+> **IMPORTANT: Never create or push git tags without being explicitly asked to by the user.**
+> The user decides when to release. Only commit and push code changes; leave tagging to the user or to an explicit "publish"/"release" request.
+
 ```bash
 # Replace vX.Y.Z with the correct version
 git tag vX.Y.Z

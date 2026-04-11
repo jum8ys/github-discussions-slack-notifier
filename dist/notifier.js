@@ -59,7 +59,7 @@ async function buildDiscussionMessage(discussion, mappingFilePath) {
     const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
     const titleText = url ? `*<${url}|${title}>*` : `*${title}*`;
     const authorText = `by <https://github.com/${createdBy}|${createdBy}>`;
-    const blocks = [
+    const topBlocks = [
         {
             type: 'section',
             text: {
@@ -73,15 +73,28 @@ async function buildDiscussionMessage(discussion, mappingFilePath) {
         },
     ];
     if (body) {
-        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: body } });
+        const attachmentBlocks = [
+            { type: 'section', text: { type: 'mrkdwn', text: body } },
+        ];
+        if (url) {
+            attachmentBlocks.push({
+                type: 'section',
+                text: { type: 'mrkdwn', text: `<${url}|View discussion on GitHub>` },
+            });
+        }
+        return {
+            text: `New discussion: ${title}`,
+            blocks: topBlocks,
+            attachments: [{ color: '#28A745', blocks: attachmentBlocks }],
+        };
     }
     if (url) {
-        blocks.push({
+        topBlocks.push({
             type: 'section',
             text: { type: 'mrkdwn', text: `<${url}|View discussion on GitHub>` },
         });
     }
-    return { text: `New discussion: ${title}`, attachments: [{ color: '#28A745', blocks }] };
+    return { text: `New discussion: ${title}`, blocks: topBlocks };
 }
 async function buildCommentMessage(comment, discussion, mappingFilePath) {
     const discussionTitle = discussion.title ?? 'No title';
@@ -94,7 +107,7 @@ async function buildCommentMessage(comment, discussion, mappingFilePath) {
         ? `*<${discussionUrl}|${discussionTitle}>*`
         : `*${discussionTitle}*`;
     const authorText = `by <https://github.com/${createdBy}|${createdBy}>`;
-    const blocks = [
+    const topBlocks = [
         {
             type: 'section',
             text: {
@@ -108,18 +121,28 @@ async function buildCommentMessage(comment, discussion, mappingFilePath) {
         },
     ];
     if (body) {
-        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: body } });
+        const attachmentBlocks = [
+            { type: 'section', text: { type: 'mrkdwn', text: body } },
+        ];
+        if (commentUrl) {
+            attachmentBlocks.push({
+                type: 'section',
+                text: { type: 'mrkdwn', text: `<${commentUrl}|View comment on GitHub>` },
+            });
+        }
+        return {
+            text: `New comment on: ${discussionTitle}`,
+            blocks: topBlocks,
+            attachments: [{ color: '#0075DB', blocks: attachmentBlocks }],
+        };
     }
     if (commentUrl) {
-        blocks.push({
+        topBlocks.push({
             type: 'section',
             text: { type: 'mrkdwn', text: `<${commentUrl}|View comment on GitHub>` },
         });
     }
-    return {
-        text: `New comment on: ${discussionTitle}`,
-        attachments: [{ color: '#0075DB', blocks }],
-    };
+    return { text: `New comment on: ${discussionTitle}`, blocks: topBlocks };
 }
 async function buildAnsweredMessage(answer, discussion, mappingFilePath) {
     const discussionTitle = discussion.title ?? 'No title';
@@ -133,7 +156,7 @@ async function buildAnsweredMessage(answer, discussion, mappingFilePath) {
         ? `*<${discussionUrl}|${discussionTitle}>*`
         : `*${discussionTitle}*`;
     const authorText = `answered by <https://github.com/${answeredBy}|${answeredBy}>`;
-    const blocks = [
+    const topBlocks = [
         {
             type: 'section',
             text: {
@@ -147,18 +170,28 @@ async function buildAnsweredMessage(answer, discussion, mappingFilePath) {
         },
     ];
     if (body) {
-        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: body } });
+        const attachmentBlocks = [
+            { type: 'section', text: { type: 'mrkdwn', text: body } },
+        ];
+        if (answerUrl) {
+            attachmentBlocks.push({
+                type: 'section',
+                text: { type: 'mrkdwn', text: `<${answerUrl}|View answer on GitHub>` },
+            });
+        }
+        return {
+            text: `Discussion answered: ${discussionTitle}`,
+            blocks: topBlocks,
+            attachments: [{ color: '#F6B73C', blocks: attachmentBlocks }],
+        };
     }
     if (answerUrl) {
-        blocks.push({
+        topBlocks.push({
             type: 'section',
             text: { type: 'mrkdwn', text: `<${answerUrl}|View answer on GitHub>` },
         });
     }
-    return {
-        text: `Discussion answered: ${discussionTitle}`,
-        attachments: [{ color: '#F6B73C', blocks }],
-    };
+    return { text: `Discussion answered: ${discussionTitle}`, blocks: topBlocks };
 }
 function sendSlackMessage(webhookUrl, payload) {
     const body = JSON.stringify(payload);
