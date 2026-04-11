@@ -28,14 +28,27 @@ function extractGitHubMentions(text) {
 function escapeRegExp(str) {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-async function resolveMentionsToSlack(text, mappingFilePath) {
+async function loadMentionMapping(mappingSource) {
+    const config = typeof mappingSource === 'string'
+        ? { filePath: mappingSource, json: undefined }
+        : mappingSource;
+    const inlineMappingJson = config.json?.trim();
+    if (inlineMappingJson) {
+        return JSON.parse(inlineMappingJson);
+    }
+    if (!config.filePath) {
+        return {};
+    }
+    const mappingContent = await fs_1.default.promises.readFile(config.filePath, 'utf8');
+    return JSON.parse(mappingContent);
+}
+async function resolveMentionsToSlack(text, mappingSource) {
     const githubMentions = extractGitHubMentions(text);
     if (githubMentions.length === 0) {
         return text;
     }
     try {
-        const mappingContent = await fs_1.default.promises.readFile(mappingFilePath, 'utf8');
-        const mapping = JSON.parse(mappingContent);
+        const mapping = await loadMentionMapping(mappingSource);
         let resolvedText = text;
         for (const githubUsername of githubMentions) {
             const slackUserId = mapping[githubUsername];
@@ -77,31 +90,31 @@ function buildPayload(summaryText, headerText, body, linkUrl, linkLabel, color) 
     }
     return { text: summaryText, blocks: topBlocks };
 }
-async function buildDiscussionMessage(discussion, mappingFilePath) {
+async function buildDiscussionMessage(discussion, mappingSource) {
     const title = discussion.title ?? 'No title';
     const url = discussion.html_url ?? discussion.url;
     const createdBy = discussion.user?.login ?? 'unknown';
     const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
-    const body = summarize(await resolveMentionsToSlack(discussion.body ?? discussion.body_text ?? '', mappingFilePath));
+    const body = summarize(await resolveMentionsToSlack(discussion.body ?? discussion.body_text ?? '', mappingSource));
     const header = `:speech_balloon: *New discussion created*${category}  by ${githubUserLink(createdBy)}\n${titleLink(url, title)}`;
     return buildPayload(`New discussion: ${title}`, header, body, url, 'View discussion on GitHub', '#28A745');
 }
-async function buildCommentMessage(comment, discussion, mappingFilePath) {
+async function buildCommentMessage(comment, discussion, mappingSource) {
     const discussionTitle = discussion.title ?? 'No title';
     const commentUrl = comment.html_url ?? comment.url;
     const discussionUrl = discussion.html_url ?? discussion.url;
     const createdBy = comment.user?.login ?? 'unknown';
-    const body = summarize(await resolveMentionsToSlack(comment.body ?? comment.body_text ?? '', mappingFilePath));
+    const body = summarize(await resolveMentionsToSlack(comment.body ?? comment.body_text ?? '', mappingSource));
     const header = `:speech_balloon: *New discussion comment*  by ${githubUserLink(createdBy)}\n${titleLink(discussionUrl, discussionTitle)}`;
     return buildPayload(`New comment on: ${discussionTitle}`, header, body, commentUrl, 'View comment on GitHub', '#0075DB');
 }
-async function buildAnsweredMessage(answer, discussion, mappingFilePath) {
+async function buildAnsweredMessage(answer, discussion, mappingSource) {
     const discussionTitle = discussion.title ?? 'No title';
     const answerUrl = answer.html_url ?? answer.url;
     const discussionUrl = discussion.html_url ?? discussion.url;
     const answeredBy = answer.user?.login ?? 'unknown';
     const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
-    const body = summarize(await resolveMentionsToSlack(answer.body ?? answer.body_text ?? '', mappingFilePath));
+    const body = summarize(await resolveMentionsToSlack(answer.body ?? answer.body_text ?? '', mappingSource));
     const header = `:white_check_mark: *Discussion answered*${category}  answered by ${githubUserLink(answeredBy)}\n${titleLink(discussionUrl, discussionTitle)}`;
     return buildPayload(`Discussion answered: ${discussionTitle}`, header, body, answerUrl, 'View answer on GitHub', '#F6B73C');
 }

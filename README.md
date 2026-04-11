@@ -1,7 +1,7 @@
 # GitHub Discussions Slack Notifier
 
 This GitHub Action sends Slack notifications when GitHub Discussions are created or commented on.
-It can convert GitHub `@mentions` into Slack mentions using a JSON mapping file.
+It can convert GitHub `@mentions` into Slack mentions using inline JSON or a mapping file.
 
 This repository is intended to be used from other repositories.
 
@@ -12,17 +12,25 @@ To use it externally, reference a published tag such as `@v1` or `@v1.0.0`.
 - Supports `discussion.created`, `discussion.answered`, and `discussion_comment.created` notifications
 - Includes title, author, summarized body, link, and timestamp in notifications
 - Converts GitHub `@mentions` to Slack mentions
+- Supports mapping from an inline JSON secret or a repository file
 - Enables/disables discussion-created and comment-created notifications independently
 
 ## Quick Start (Direct Action)
 
-### 1. Add the Slack Webhook secret
+### 1. Add secrets
 
 Add the following secret to the repository that will use this action:
 
 - `SLACK_WEBHOOK_URL`
+- `GITHUB_TO_SLACK_USER_MAPPING_JSON` (optional, recommended for private mapping)
 
-### 2. (Optional) Create a mention mapping file
+Example value for `GITHUB_TO_SLACK_USER_MAPPING_JSON`:
+
+```json
+{"john-doe":"UXXXXXXXX","jane-smith":"UYYYYYYYY"}
+```
+
+### 2. (Optional) Use a repository file instead of secret
 
 Create `.github/github-username-slack-mapping.json` in the repository:
 
@@ -55,7 +63,8 @@ jobs:
         uses: jum8ys/github-discussions-slack-notifier@v1
         with:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          github_username_slack_mapping: '.github/github-username-slack-mapping.json'
+          github_to_slack_user_mapping_json: ${{ secrets.GITHUB_TO_SLACK_USER_MAPPING_JSON }}
+          github_to_slack_user_mapping_file: '.github/github-username-slack-mapping.json'
           notify_discussion_created: 'true'
           notify_comment_created: 'true'
           notify_answered: 'true'
@@ -66,10 +75,13 @@ jobs:
 | Input | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | slack_webhook_url | string | yes | - | Slack Incoming Webhook URL |
-| github_username_slack_mapping | string | no | .github/github-username-slack-mapping.json | Path to the GitHub username -> Slack user ID mapping JSON |
+| github_to_slack_user_mapping_json | string | no | - | Inline JSON for GitHub username -> Slack user ID mapping (recommended for secrets) |
+| github_to_slack_user_mapping_file | string | no | .github/github-username-slack-mapping.json | Path to the GitHub username -> Slack user ID mapping JSON |
 | notify_discussion_created | string | no | true | Enable notifications for discussion creation |
 | notify_comment_created | string | no | true | Enable notifications for discussion comments |
 | notify_answered | string | no | true | Enable notifications when a discussion is marked as answered |
+
+If both JSON and file inputs are set, the JSON input is used.
 
 ## How Mention Conversion Works
 

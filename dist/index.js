@@ -8,9 +8,11 @@ const notifier_js_1 = require("./notifier.js");
 const eventPath = process.env.GITHUB_EVENT_PATH;
 const eventName = process.env.GITHUB_EVENT_NAME;
 const webhookUrl = process.env.INPUT_SLACK_WEBHOOK_URL ?? process.env.SLACK_WEBHOOK_URL;
-const mappingFilePath = process.env.INPUT_GITHUB_USERNAME_SLACK_MAPPING ??
-    process.env.GITHUB_USERNAME_SLACK_MAPPING ??
+const mappingFilePath = process.env.INPUT_GITHUB_TO_SLACK_USER_MAPPING_FILE ??
+    process.env.GITHUB_TO_SLACK_USER_MAPPING_FILE ??
     '.github/github-username-slack-mapping.json';
+const mappingJson = process.env.INPUT_GITHUB_TO_SLACK_USER_MAPPING_JSON ??
+    process.env.GITHUB_TO_SLACK_USER_MAPPING_JSON;
 const notifyDiscussionCreated = (process.env.INPUT_NOTIFY_DISCUSSION_CREATED ??
     process.env.NOTIFY_DISCUSSION_CREATED ??
     'true') === 'true';
@@ -27,6 +29,7 @@ if (!eventPath || !fs_1.default.existsSync(eventPath)) {
     process.exit(0);
 }
 const payload = JSON.parse(fs_1.default.readFileSync(eventPath, 'utf8'));
+const mentionMapping = { filePath: mappingFilePath, json: mappingJson };
 async function main() {
     let slackPayload;
     if (eventName === 'discussion' && payload.action === 'created') {
@@ -34,7 +37,7 @@ async function main() {
             console.log('Discussion creation notifications are disabled.');
             return;
         }
-        slackPayload = await (0, notifier_js_1.buildDiscussionMessage)(payload.discussion ?? {}, mappingFilePath);
+        slackPayload = await (0, notifier_js_1.buildDiscussionMessage)(payload.discussion ?? {}, mentionMapping);
     }
     else if (eventName === 'discussion' && payload.action === 'answered') {
         if (!notifyAnswered) {
@@ -42,7 +45,7 @@ async function main() {
             return;
         }
         const answeredPayload = payload;
-        slackPayload = await (0, notifier_js_1.buildAnsweredMessage)(answeredPayload.answer ?? {}, answeredPayload.discussion ?? {}, mappingFilePath);
+        slackPayload = await (0, notifier_js_1.buildAnsweredMessage)(answeredPayload.answer ?? {}, answeredPayload.discussion ?? {}, mentionMapping);
     }
     else if (eventName === 'discussion_comment' && payload.action === 'created') {
         if (!notifyCommentCreated) {
@@ -50,7 +53,7 @@ async function main() {
             return;
         }
         const commentPayload = payload;
-        slackPayload = await (0, notifier_js_1.buildCommentMessage)(commentPayload.comment ?? {}, commentPayload.discussion ?? {}, mappingFilePath);
+        slackPayload = await (0, notifier_js_1.buildCommentMessage)(commentPayload.comment ?? {}, commentPayload.discussion ?? {}, mentionMapping);
     }
     else {
         console.log(`Event ${eventName}/${payload.action} is ignored.`);

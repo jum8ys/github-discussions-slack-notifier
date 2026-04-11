@@ -3,7 +3,7 @@ name: Notify GitHub Discussions to Slack
 on:
   workflow_call:
     inputs:
-      github_username_slack_mapping:
+      github_to_slack_user_mapping_file:
         description: 'Path to JSON file with GitHub username to Slack user ID mapping.'
         required: false
         type: string
@@ -26,6 +26,8 @@ on:
     secrets:
       SLACK_WEBHOOK_URL:
         required: true
+      GITHUB_TO_SLACK_USER_MAPPING_JSON:
+        required: false
 
 jobs:
   notify:
@@ -37,7 +39,8 @@ jobs:
         uses: jum8ys/github-discussions-slack-notifier@v1
         with:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          github_username_slack_mapping: ${{ inputs.github_username_slack_mapping }}
+          github_to_slack_user_mapping_file: ${{ inputs.github_to_slack_user_mapping_file }}
+          github_to_slack_user_mapping_json: ${{ secrets.GITHUB_TO_SLACK_USER_MAPPING_JSON }}
           notify_discussion_created: ${{ inputs.notify_discussion_created }}
           notify_comment_created: ${{ inputs.notify_comment_created }}
           notify_answered: ${{ inputs.notify_answered }}

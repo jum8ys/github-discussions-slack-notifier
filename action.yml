@@ -12,10 +12,13 @@ inputs:
   slack_webhook_url:
     description: 'Slack Incoming Webhook URL.'
     required: true
-  github_username_slack_mapping:
-    description: 'Path to JSON file with GitHub username to Slack user ID mapping (e.g., .github/github-username-slack-mapping.json).'
+  github_to_slack_user_mapping_file:
+    description: 'Path to JSON file with GitHub username to Slack user ID mapping.'
     required: false
     default: '.github/github-username-slack-mapping.json'
+  github_to_slack_user_mapping_json:
+    description: 'Inline JSON for GitHub username to Slack user ID mapping. If set, this takes precedence over github_to_slack_user_mapping_file.'
+    required: false
   notify_discussion_created:
     description: 'Notify on new discussions.'
     required: false

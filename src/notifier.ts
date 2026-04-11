@@ -49,6 +49,13 @@ export interface SlackPayload {
   attachments?: SlackAttachment[];
 }
 
+export interface MentionMappingConfig {
+  filePath?: string;
+  json?: string;
+}
+
+export type MentionMappingSource = string | MentionMappingConfig;
+
 export function summarize(text: string | undefined, limit = 200): string {
   if (!text) return '';
   const normalized = text.replace(/\r\n/g, '\n').trim();
@@ -65,9 +72,30 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+async function loadMentionMapping(
+  mappingSource: MentionMappingSource
+): Promise<Record<string, string>> {
+  const config =
+    typeof mappingSource === 'string'
+      ? { filePath: mappingSource, json: undefined }
+      : mappingSource;
+  const inlineMappingJson = config.json?.trim();
+
+  if (inlineMappingJson) {
+    return JSON.parse(inlineMappingJson) as Record<string, string>;
+  }
+
+  if (!config.filePath) {
+    return {};
+  }
+
+  const mappingContent = await fs.promises.readFile(config.filePath, 'utf8');
+  return JSON.parse(mappingContent) as Record<string, string>;
+}
+
 export async function resolveMentionsToSlack(
   text: string,
-  mappingFilePath: string
+  mappingSource: MentionMappingSource
 ): Promise<string> {
   const githubMentions = extractGitHubMentions(text);
   if (githubMentions.length === 0) {
@@ -75,8 +103,7 @@ export async function resolveMentionsToSlack(
   }
 
   try {
-    const mappingContent = await fs.promises.readFile(mappingFilePath, 'utf8');
-    const mapping = JSON.parse(mappingContent) as Record<string, string>;
+    const mapping = await loadMentionMapping(mappingSource);
 
     let resolvedText = text;
     for (const githubUsername of githubMentions) {
@@ -138,14 +165,14 @@ function buildPayload(
 
 export async function buildDiscussionMessage(
   discussion: Discussion,
-  mappingFilePath: string
+  mappingSource: MentionMappingSource
 ): Promise<SlackPayload> {
   const title = discussion.title ?? 'No title';
   const url = discussion.html_url ?? discussion.url;
   const createdBy = discussion.user?.login ?? 'unknown';
   const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
   const body = summarize(
-    await resolveMentionsToSlack(discussion.body ?? discussion.body_text ?? '', mappingFilePath)
+    await resolveMentionsToSlack(discussion.body ?? discussion.body_text ?? '', mappingSource)
   );
 
   const header = `:speech_balloon: *New discussion created*${category}  by ${githubUserLink(createdBy)}\n${titleLink(url, title)}`;
@@ -162,14 +189,14 @@ export async function buildDiscussionMessage(
 export async function buildCommentMessage(
   comment: Comment,
   discussion: Discussion,
-  mappingFilePath: string
+  mappingSource: MentionMappingSource
 ): Promise<SlackPayload> {
   const discussionTitle = discussion.title ?? 'No title';
   const commentUrl = comment.html_url ?? comment.url;
   const discussionUrl = discussion.html_url ?? discussion.url;
   const createdBy = comment.user?.login ?? 'unknown';
   const body = summarize(
-    await resolveMentionsToSlack(comment.body ?? comment.body_text ?? '', mappingFilePath)
+    await resolveMentionsToSlack(comment.body ?? comment.body_text ?? '', mappingSource)
   );
 
   const header = `:speech_balloon: *New discussion comment*  by ${githubUserLink(createdBy)}\n${titleLink(discussionUrl, discussionTitle)}`;
@@ -186,7 +213,7 @@ export async function buildCommentMessage(
 export async function buildAnsweredMessage(
   answer: Answer,
   discussion: Discussion,
-  mappingFilePath: string
+  mappingSource: MentionMappingSource
 ): Promise<SlackPayload> {
   const discussionTitle = discussion.title ?? 'No title';
   const answerUrl = answer.html_url ?? answer.url;
@@ -194,7 +221,7 @@ export async function buildAnsweredMessage(
   const answeredBy = answer.user?.login ?? 'unknown';
   const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
   const body = summarize(
-    await resolveMentionsToSlack(answer.body ?? answer.body_text ?? '', mappingFilePath)
+    await resolveMentionsToSlack(answer.body ?? answer.body_text ?? '', mappingSource)
   );
 
   const header = `:white_check_mark: *Discussion answered*${category}  answered by ${githubUserLink(answeredBy)}\n${titleLink(discussionUrl, discussionTitle)}`;

@@ -6,6 +6,7 @@ import {
   Discussion,
   Comment,
   Answer,
+  MentionMappingConfig,
   SlackPayload,
   sendSlackMessage,
 } from './notifier.js';
@@ -26,9 +27,12 @@ const eventPath = process.env.GITHUB_EVENT_PATH;
 const eventName = process.env.GITHUB_EVENT_NAME;
 const webhookUrl = process.env.INPUT_SLACK_WEBHOOK_URL ?? process.env.SLACK_WEBHOOK_URL;
 const mappingFilePath =
-  process.env.INPUT_GITHUB_USERNAME_SLACK_MAPPING ??
-  process.env.GITHUB_USERNAME_SLACK_MAPPING ??
+  process.env.INPUT_GITHUB_TO_SLACK_USER_MAPPING_FILE ??
+  process.env.GITHUB_TO_SLACK_USER_MAPPING_FILE ??
   '.github/github-username-slack-mapping.json';
+const mappingJson =
+  process.env.INPUT_GITHUB_TO_SLACK_USER_MAPPING_JSON ??
+  process.env.GITHUB_TO_SLACK_USER_MAPPING_JSON;
 const notifyDiscussionCreated =
   (process.env.INPUT_NOTIFY_DISCUSSION_CREATED ??
     process.env.NOTIFY_DISCUSSION_CREATED ??
@@ -56,6 +60,7 @@ if (!eventPath || !fs.existsSync(eventPath)) {
 const payload = JSON.parse(fs.readFileSync(eventPath, 'utf8')) as
   | DiscussionEventPayload
   | DiscussionCommentEventPayload;
+const mentionMapping: MentionMappingConfig = { filePath: mappingFilePath, json: mappingJson };
 
 async function main(): Promise<void> {
   let slackPayload: SlackPayload;
@@ -67,7 +72,7 @@ async function main(): Promise<void> {
     }
     slackPayload = await buildDiscussionMessage(
       (payload as DiscussionEventPayload).discussion ?? {},
-      mappingFilePath
+      mentionMapping
     );
   } else if (eventName === 'discussion' && payload.action === 'answered') {
     if (!notifyAnswered) {
@@ -78,7 +83,7 @@ async function main(): Promise<void> {
     slackPayload = await buildAnsweredMessage(
       answeredPayload.answer ?? {},
       answeredPayload.discussion ?? {},
-      mappingFilePath
+      mentionMapping
     );
   } else if (eventName === 'discussion_comment' && payload.action === 'created') {
     if (!notifyCommentCreated) {
@@ -89,7 +94,7 @@ async function main(): Promise<void> {
     slackPayload = await buildCommentMessage(
       commentPayload.comment ?? {},
       commentPayload.discussion ?? {},
-      mappingFilePath
+      mentionMapping
     );
   } else {
     console.log(`Event ${eventName}/${payload.action} is ignored.`);

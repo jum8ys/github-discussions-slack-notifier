@@ -14,6 +14,11 @@ import {
   SlackPayload,
   summarize,
 } from '../src/notifier';
+
+const NEVER_REAL_SLACK_ID_ALPHA = 'SLACK_ID_TEST_ONLY_NOT_REAL_ALPHA';
+const NEVER_REAL_SLACK_ID_BETA = 'SLACK_ID_TEST_ONLY_NOT_REAL_BETA';
+const NEVER_REAL_SLACK_ID_GAMMA = 'SLACK_ID_TEST_ONLY_NOT_REAL_GAMMA';
+const NEVER_REAL_SLACK_ID_DELTA = 'SLACK_ID_TEST_ONLY_NOT_REAL_DELTA';
 function writeMappingFile(mapping: Record<string, string>): string {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'gdsn-'));
   const mappingPath = path.join(tmpDir, 'mapping.json');
@@ -87,13 +92,29 @@ describe('extractGitHubMentions', () => {
 
 describe('resolveMentionsToSlack', () => {
   it('should convert mapped mentions', async () => {
-    const mappingPath = writeMappingFile({ 'john-doe': 'U12345678' });
+    const mappingPath = writeMappingFile({ 'john-doe': NEVER_REAL_SLACK_ID_ALPHA });
     const result = await resolveMentionsToSlack('Hi @john-doe', mappingPath);
-    expect(result).toBe('Hi <@U12345678>');
+    expect(result).toBe(`Hi <@${NEVER_REAL_SLACK_ID_ALPHA}>`);
+  });
+
+  it('should convert mentions from inline mapping JSON', async () => {
+    const result = await resolveMentionsToSlack('Hi @john-doe', {
+      json: `{"john-doe":"${NEVER_REAL_SLACK_ID_BETA}"}`,
+    });
+    expect(result).toBe(`Hi <@${NEVER_REAL_SLACK_ID_BETA}>`);
+  });
+
+  it('should prioritize inline mapping JSON over mapping file', async () => {
+    const mappingPath = writeMappingFile({ 'john-doe': NEVER_REAL_SLACK_ID_ALPHA });
+    const result = await resolveMentionsToSlack('Hi @john-doe', {
+      filePath: mappingPath,
+      json: `{"john-doe":"${NEVER_REAL_SLACK_ID_BETA}"}`,
+    });
+    expect(result).toBe(`Hi <@${NEVER_REAL_SLACK_ID_BETA}>`);
   });
 
   it('should keep unmapped mentions as-is', async () => {
-    const mappingPath = writeMappingFile({ alice: 'U11111111' });
+    const mappingPath = writeMappingFile({ alice: NEVER_REAL_SLACK_ID_GAMMA });
     const result = await resolveMentionsToSlack('Hi @bob', mappingPath);
     expect(result).toBe('Hi @bob');
   });
@@ -102,7 +123,7 @@ describe('resolveMentionsToSlack', () => {
 // Test discussion message building logic
 describe('buildDiscussionMessage', () => {
   it('should include title, category, author, body, and link', async () => {
-    const mappingPath = writeMappingFile({ 'john-doe': 'U12345678' });
+    const mappingPath = writeMappingFile({ 'john-doe': NEVER_REAL_SLACK_ID_ALPHA });
     const result: SlackPayload = await buildDiscussionMessage(
       {
         title: 'Test Discussion',
@@ -123,7 +144,7 @@ describe('buildDiscussionMessage', () => {
     expect(topBlocksText).toContain(
       '<https://github.com/org/repo/discussions/123|Test Discussion>'
     );
-    expect(attachmentBlocksText).toContain('Hello <@U12345678> and welcome!');
+    expect(attachmentBlocksText).toContain(`Hello <@${NEVER_REAL_SLACK_ID_ALPHA}> and welcome!`);
     expect(attachmentBlocksText).toContain(
       '<https://github.com/org/repo/discussions/123|View discussion on GitHub>'
     );
@@ -144,7 +165,7 @@ describe('buildDiscussionMessage', () => {
 // Test comment message building logic
 describe('buildCommentMessage', () => {
   it('should include discussion title, author, body, and link', async () => {
-    const mappingPath = writeMappingFile({ commenter: 'U99999999' });
+    const mappingPath = writeMappingFile({ commenter: NEVER_REAL_SLACK_ID_DELTA });
     const result: SlackPayload = await buildCommentMessage(
       {
         body: 'Test comment by @commenter',
@@ -167,7 +188,7 @@ describe('buildCommentMessage', () => {
     expect(topBlocksText).toContain(
       '<https://github.com/org/repo/discussions/123|Discussion Title>'
     );
-    expect(attachmentBlocksText).toContain('Test comment by <@U99999999>');
+    expect(attachmentBlocksText).toContain(`Test comment by <@${NEVER_REAL_SLACK_ID_DELTA}>`);
     expect(attachmentBlocksText).toContain(
       '<https://github.com/org/repo/discussions/123#discussioncomment-456|View comment on GitHub>'
     );
@@ -188,7 +209,7 @@ describe('buildCommentMessage', () => {
 // Test answered message building logic
 describe('buildAnsweredMessage', () => {
   it('should include discussion title, answerer, body, and link', async () => {
-    const mappingPath = writeMappingFile({ answerer: 'U77777777' });
+    const mappingPath = writeMappingFile({ answerer: NEVER_REAL_SLACK_ID_GAMMA });
     const result: SlackPayload = await buildAnsweredMessage(
       {
         body: 'This solves it @answerer',
@@ -209,7 +230,7 @@ describe('buildAnsweredMessage', () => {
     expect(topBlocksText).toContain('*Discussion answered* (Q&A)');
     expect(topBlocksText).toContain('answered by <https://github.com/answerer|answerer>');
     expect(topBlocksText).toContain('<https://github.com/org/repo/discussions/123|How to do X?>');
-    expect(attachmentBlocksText).toContain('This solves it <@U77777777>');
+    expect(attachmentBlocksText).toContain(`This solves it <@${NEVER_REAL_SLACK_ID_GAMMA}>`);
     expect(attachmentBlocksText).toContain(
       '<https://github.com/org/repo/discussions/123#discussioncomment-789|View answer on GitHub>'
     );
