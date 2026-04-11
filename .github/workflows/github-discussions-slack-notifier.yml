@@ -18,6 +18,11 @@ on:
         required: false
         type: string
         default: 'true'
+      notify_answered:
+        description: 'Notify when a discussion is marked as answered.'
+        required: false
+        type: string
+        default: 'true'
     secrets:
       SLACK_WEBHOOK_URL:
         required: true
@@ -35,3 +40,4 @@ jobs:
           github_username_slack_mapping: ${{ inputs.github_username_slack_mapping }}
           notify_discussion_created: ${{ inputs.notify_discussion_created }}
           notify_comment_created: ${{ inputs.notify_comment_created }}
+          notify_answered: ${{ inputs.notify_answered }}

@@ -9,7 +9,7 @@ To use it externally, reference a published tag such as `@v1` or `@v1.0.0`.
 
 ## Features
 
-- Supports `discussion.created` and `discussion_comment.created` notifications
+- Supports `discussion.created`, `discussion.answered`, and `discussion_comment.created` notifications
 - Includes title, author, summarized body, link, and timestamp in notifications
 - Converts GitHub `@mentions` to Slack mentions
 - Enables/disables discussion-created and comment-created notifications independently
@@ -42,7 +42,7 @@ name: Notify Discussions to Slack
 
 on:
   discussion:
-    types: [created]
+    types: [created, answered]
   discussion_comment:
     types: [created]
 
@@ -58,6 +58,7 @@ jobs:
           github_username_slack_mapping: '.github/github-username-slack-mapping.json'
           notify_discussion_created: 'true'
           notify_comment_created: 'true'
+          notify_answered: 'true'
 ```
 
 ## Action Inputs
@@ -68,6 +69,7 @@ jobs:
 | github_username_slack_mapping | string | no | .github/github-username-slack-mapping.json | Path to the GitHub username -> Slack user ID mapping JSON |
 | notify_discussion_created | string | no | true | Enable notifications for discussion creation |
 | notify_comment_created | string | no | true | Enable notifications for discussion comments |
+| notify_answered | string | no | true | Enable notifications when a discussion is marked as answered |
 
 ## How Mention Conversion Works
 
