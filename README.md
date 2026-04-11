@@ -3,8 +3,6 @@
 This GitHub Action sends Slack notifications when GitHub Discussions are created or commented on.
 It can convert GitHub `@mentions` into Slack mentions using inline JSON or a mapping file.
 
-This repository is intended to be used from other repositories.
-
 To use it externally, reference a published tag such as `@v2` or `@v2.0.0`.
 
 ## Features
