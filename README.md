@@ -10,10 +10,9 @@ To use it externally, reference a published tag such as `@v1` or `@v1.0.0`.
 ## Features
 
 - Supports `discussion.created`, `discussion.answered`, and `discussion_comment.created` notifications
-- Includes title, author, summarized body, link, and timestamp in notifications
+- Includes title, author, summarized body, and link in notifications
 - Converts GitHub `@mentions` to Slack mentions
 - Supports mapping from an inline JSON secret or a repository file
-- Enables/disables discussion-created and comment-created notifications independently
 
 ## Quick Start (Direct Action)
 
@@ -43,7 +42,7 @@ Create `.github/github-username-slack-mapping.json` in the repository:
 
 ### 3. Add the action to your workflow
 
-Create the following workflow in the repository that will use this action:
+Create the following workflow in the repository that will use this action. The `on:` section controls which events trigger notifications — remove event types you don't want.
 
 ```yaml
 name: Notify Discussions to Slack
@@ -65,9 +64,6 @@ jobs:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
           github_to_slack_user_mapping_json: ${{ secrets.GITHUB_TO_SLACK_USER_MAPPING_JSON }}
           github_to_slack_user_mapping_file: '.github/github-username-slack-mapping.json'
-          notify_discussion_created: 'true'
-          notify_comment_created: 'true'
-          notify_answered: 'true'
 ```
 
 ## Action Inputs
@@ -77,9 +73,6 @@ jobs:
 | slack_webhook_url | string | yes | - | Slack Incoming Webhook URL |
 | github_to_slack_user_mapping_json | string | no | - | Inline JSON for GitHub username -> Slack user ID mapping (recommended for secrets) |
 | github_to_slack_user_mapping_file | string | no | .github/github-username-slack-mapping.json | Path to the GitHub username -> Slack user ID mapping JSON |
-| notify_discussion_created | string | no | true | Enable notifications for discussion creation |
-| notify_comment_created | string | no | true | Enable notifications for discussion comments |
-| notify_answered | string | no | true | Enable notifications when a discussion is marked as answered |
 
 If both JSON and file inputs are set, the JSON input is used.
 

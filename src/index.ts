@@ -33,15 +33,6 @@ const mappingFilePath =
 const mappingJson =
   process.env.INPUT_GITHUB_TO_SLACK_USER_MAPPING_JSON ??
   process.env.GITHUB_TO_SLACK_USER_MAPPING_JSON;
-const notifyDiscussionCreated =
-  (process.env.INPUT_NOTIFY_DISCUSSION_CREATED ??
-    process.env.NOTIFY_DISCUSSION_CREATED ??
-    'true') === 'true';
-const notifyCommentCreated =
-  (process.env.INPUT_NOTIFY_COMMENT_CREATED ?? process.env.NOTIFY_COMMENT_CREATED ?? 'true') ===
-  'true';
-const notifyAnswered =
-  (process.env.INPUT_NOTIFY_ANSWERED ?? process.env.NOTIFY_ANSWERED ?? 'true') === 'true';
 
 if (!webhookUrl) {
   console.error(
@@ -66,19 +57,11 @@ async function main(): Promise<void> {
   let slackPayload: SlackPayload;
 
   if (eventName === 'discussion' && payload.action === 'created') {
-    if (!notifyDiscussionCreated) {
-      console.log('Discussion creation notifications are disabled.');
-      return;
-    }
     slackPayload = await buildDiscussionMessage(
       (payload as DiscussionEventPayload).discussion ?? {},
       mentionMapping
     );
   } else if (eventName === 'discussion' && payload.action === 'answered') {
-    if (!notifyAnswered) {
-      console.log('Discussion answered notifications are disabled.');
-      return;
-    }
     const answeredPayload = payload as DiscussionEventPayload;
     slackPayload = await buildAnsweredMessage(
       answeredPayload.answer ?? {},
@@ -86,10 +69,6 @@ async function main(): Promise<void> {
       mentionMapping
     );
   } else if (eventName === 'discussion_comment' && payload.action === 'created') {
-    if (!notifyCommentCreated) {
-      console.log('Discussion comment notifications are disabled.');
-      return;
-    }
     const commentPayload = payload as DiscussionCommentEventPayload;
     slackPayload = await buildCommentMessage(
       commentPayload.comment ?? {},

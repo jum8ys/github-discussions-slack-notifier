@@ -83,47 +83,4 @@ describe('index.ts entrypoint', () => {
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('ignored'));
   });
-
-  it('should skip when notify_discussion_created is false', async () => {
-    const eventPath = writeEventPayload({
-      action: 'created',
-      discussion: { title: 'Test' },
-    });
-    process.env.INPUT_SLACK_WEBHOOK_URL = 'https://hooks.slack.com/test';
-    process.env.GITHUB_EVENT_PATH = eventPath;
-    process.env.GITHUB_EVENT_NAME = 'discussion';
-    process.env.INPUT_NOTIFY_DISCUSSION_CREATED = 'false';
-
-    jest.isolateModules(() => {
-      require('../src/index');
-    });
-
-    await new Promise((r) => setTimeout(r, 100));
-
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Discussion creation notifications are disabled')
-    );
-  });
-
-  it('should skip when notify_comment_created is false', async () => {
-    const eventPath = writeEventPayload({
-      action: 'created',
-      comment: { body: 'test' },
-      discussion: { title: 'Test' },
-    });
-    process.env.INPUT_SLACK_WEBHOOK_URL = 'https://hooks.slack.com/test';
-    process.env.GITHUB_EVENT_PATH = eventPath;
-    process.env.GITHUB_EVENT_NAME = 'discussion_comment';
-    process.env.INPUT_NOTIFY_COMMENT_CREATED = 'false';
-
-    jest.isolateModules(() => {
-      require('../src/index');
-    });
-
-    await new Promise((r) => setTimeout(r, 100));
-
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Discussion comment notifications are disabled')
-    );
-  });
 });

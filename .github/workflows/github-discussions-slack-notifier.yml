@@ -8,21 +8,6 @@ on:
         required: false
         type: string
         default: '.github/github-username-slack-mapping.json'
-      notify_discussion_created:
-        description: 'Notify on new discussions.'
-        required: false
-        type: string
-        default: 'true'
-      notify_comment_created:
-        description: 'Notify on new discussion comments.'
-        required: false
-        type: string
-        default: 'true'
-      notify_answered:
-        description: 'Notify when a discussion is marked as answered.'
-        required: false
-        type: string
-        default: 'true'
     secrets:
       SLACK_WEBHOOK_URL:
         required: true
@@ -41,6 +26,3 @@ jobs:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
           github_to_slack_user_mapping_file: ${{ inputs.github_to_slack_user_mapping_file }}
           github_to_slack_user_mapping_json: ${{ secrets.GITHUB_TO_SLACK_USER_MAPPING_JSON }}
-          notify_discussion_created: ${{ inputs.notify_discussion_created }}
-          notify_comment_created: ${{ inputs.notify_comment_created }}
-          notify_answered: ${{ inputs.notify_answered }}

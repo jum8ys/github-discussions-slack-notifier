@@ -19,18 +19,6 @@ inputs:
   github_to_slack_user_mapping_json:
     description: 'Inline JSON for GitHub username to Slack user ID mapping. If set, this takes precedence over github_to_slack_user_mapping_file.'
     required: false
-  notify_discussion_created:
-    description: 'Notify on new discussions.'
-    required: false
-    default: 'true'
-  notify_comment_created:
-    description: 'Notify on new discussion comments.'
-    required: false
-    default: 'true'
-  notify_answered:
-    description: 'Notify when a discussion is marked as answered.'
-    required: false
-    default: 'true'
 
 runs:
   using: 'node24'
