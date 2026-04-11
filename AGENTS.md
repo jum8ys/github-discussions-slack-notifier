@@ -89,4 +89,4 @@ git push origin vX.Y.Z
 git push -f origin vX
 ```
 
-To release, say **"publish"** or **"release"** — the `publish` skill will handle the rest.
+To release, say **"publish"** or **"release"**. The agent will read `.claude/skills/publish/SKILL.md` and follow those steps automatically.
