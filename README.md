@@ -10,7 +10,7 @@ It can convert GitHub `@mentions` into Slack mentions using inline JSON or a map
 - Converts GitHub `@mentions` to Slack mentions
 - Supports mapping from an inline JSON secret or a repository file
 
-## Quick Start
+## Usage
 
 ### 1. Add secrets
 
