@@ -15,7 +15,7 @@ npm run format         # prettier --write
 npm run format:check   # prettier --check (CI-friendly)
 ```
 
-`dist/` is committed and executed by GitHub Actions (`node20` runtime). Always rebuild and commit `dist/` after changing source files.
+`dist/` is committed and executed by GitHub Actions (`node24` runtime). Always rebuild and commit `dist/` after changing source files.
 
 ## Architecture
 
@@ -39,11 +39,12 @@ Flow: `Actions event → index.ts (env/payload parsing) → notifier.ts (build m
 
 ## Supported Events
 
-The action handles two GitHub event types:
+The action handles the following GitHub event types:
 
 | Event | Action | Flag |
 |---|---|---|
 | `discussion` | `created` | `notify_discussion_created` |
+| `discussion` | `answered` | `notify_answered` |
 | `discussion_comment` | `created` | `notify_comment_created` |
 
 Other event/action combinations are silently ignored.
@@ -79,8 +80,8 @@ Follow [Semantic Versioning](https://semver.org/):
 
 ```bash
 # Replace vX.Y.Z with the correct version
-git tag -a vX.Y.Z -m "Release vX.Y.Z"
+git tag vX.Y.Z
 git tag -f vX          # move the major tag (v1, v2, ...) to latest
 git push origin vX.Y.Z
-git push origin vX --force
+git push -f origin vX
 ```
