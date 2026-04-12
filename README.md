@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack
-        uses: jum8ys/github-discussions-slack-notifier@v2
+        uses: jum8ys/github-discussions-slack-notifier@v3
         with:
           slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
           slack_user_mapping_json: ${{ secrets.SLACK_USER_MAPPING_JSON }}

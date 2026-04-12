@@ -72,6 +72,10 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function escapeMrkdwnText(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 async function loadMentionMapping(
   mappingSource: MentionMappingSource
 ): Promise<Record<string, string>> {
@@ -163,16 +167,27 @@ function buildPayload(
   return { text: summaryText, blocks: topBlocks };
 }
 
+async function resolveAndSummarizeBody(
+  bodyText: string | undefined,
+  mappingSource: MentionMappingSource
+): Promise<string> {
+  const escapedBodyText = escapeMrkdwnText(bodyText ?? '');
+  return summarize(await resolveMentionsToSlack(escapedBodyText, mappingSource));
+}
+
 export async function buildDiscussionMessage(
   discussion: Discussion,
   mappingSource: MentionMappingSource
 ): Promise<SlackPayload> {
-  const title = discussion.title ?? 'No title';
+  const title = escapeMrkdwnText(discussion.title ?? 'No title');
   const url = discussion.html_url ?? discussion.url;
   const createdBy = discussion.user?.login ?? 'unknown';
-  const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
-  const body = summarize(
-    await resolveMentionsToSlack(discussion.body ?? discussion.body_text ?? '', mappingSource)
+  const category = discussion.category?.name
+    ? ` (${escapeMrkdwnText(discussion.category.name)})`
+    : '';
+  const body = await resolveAndSummarizeBody(
+    discussion.body ?? discussion.body_text,
+    mappingSource
   );
 
   const header = `:speech_balloon: *New discussion created*${category}  by ${githubUserLink(createdBy)}\n${titleLink(url, title)}`;
@@ -191,13 +206,11 @@ export async function buildCommentMessage(
   discussion: Discussion,
   mappingSource: MentionMappingSource
 ): Promise<SlackPayload> {
-  const discussionTitle = discussion.title ?? 'No title';
+  const discussionTitle = escapeMrkdwnText(discussion.title ?? 'No title');
   const commentUrl = comment.html_url ?? comment.url;
   const discussionUrl = discussion.html_url ?? discussion.url;
   const createdBy = comment.user?.login ?? 'unknown';
-  const body = summarize(
-    await resolveMentionsToSlack(comment.body ?? comment.body_text ?? '', mappingSource)
-  );
+  const body = await resolveAndSummarizeBody(comment.body ?? comment.body_text, mappingSource);
 
   const header = `:speech_balloon: *New discussion comment*  by ${githubUserLink(createdBy)}\n${titleLink(discussionUrl, discussionTitle)}`;
   return buildPayload(
@@ -215,14 +228,14 @@ export async function buildAnsweredMessage(
   discussion: Discussion,
   mappingSource: MentionMappingSource
 ): Promise<SlackPayload> {
-  const discussionTitle = discussion.title ?? 'No title';
+  const discussionTitle = escapeMrkdwnText(discussion.title ?? 'No title');
   const answerUrl = answer.html_url ?? answer.url;
   const discussionUrl = discussion.html_url ?? discussion.url;
   const answeredBy = answer.user?.login ?? 'unknown';
-  const category = discussion.category?.name ? ` (${discussion.category.name})` : '';
-  const body = summarize(
-    await resolveMentionsToSlack(answer.body ?? answer.body_text ?? '', mappingSource)
-  );
+  const category = discussion.category?.name
+    ? ` (${escapeMrkdwnText(discussion.category.name)})`
+    : '';
+  const body = await resolveAndSummarizeBody(answer.body ?? answer.body_text, mappingSource);
 
   const header = `:white_check_mark: *Discussion answered*${category}  answered by ${githubUserLink(answeredBy)}\n${titleLink(discussionUrl, discussionTitle)}`;
   return buildPayload(

@@ -150,6 +150,30 @@ describe('buildDiscussionMessage', () => {
     );
   });
 
+  it('should escape mrkdwn control characters in title, category, and body', async () => {
+    const mappingPath = writeMappingFile({ 'john-doe': NEVER_REAL_SLACK_ID_ALPHA });
+    const result: SlackPayload = await buildDiscussionMessage(
+      {
+        title: 'Release <v3> & roadmap',
+        body: 'Ping <!channel> and @john-doe <script>alert(1)</script> & done',
+        html_url: 'https://github.com/org/repo/discussions/123',
+        user: { login: 'testuser' },
+        category: { name: 'General <all>' },
+      },
+      mappingPath
+    );
+
+    const topBlocksText = JSON.stringify(result.blocks);
+    const attachmentBlocksText = JSON.stringify(result.attachments![0].blocks);
+    expect(topBlocksText).toContain('*New discussion created* (General &lt;all&gt;)');
+    expect(topBlocksText).toContain(
+      '<https://github.com/org/repo/discussions/123|Release &lt;v3&gt; &amp; roadmap>'
+    );
+    expect(attachmentBlocksText).toContain(
+      `Ping &lt;!channel&gt; and <@${NEVER_REAL_SLACK_ID_ALPHA}> &lt;script&gt;alert(1)&lt;/script&gt; &amp; done`
+    );
+  });
+
   it('should use fallback values when fields are missing', async () => {
     const mappingPath = writeMappingFile({});
     const result: SlackPayload = await buildDiscussionMessage({}, mappingPath);
@@ -194,6 +218,31 @@ describe('buildCommentMessage', () => {
     );
   });
 
+  it('should escape mrkdwn control characters in title and body', async () => {
+    const mappingPath = writeMappingFile({ commenter: NEVER_REAL_SLACK_ID_DELTA });
+    const result: SlackPayload = await buildCommentMessage(
+      {
+        body: 'Escalate <!here> @commenter & review',
+        html_url: 'https://github.com/org/repo/discussions/123#discussioncomment-456',
+        user: { login: 'commenter' },
+      },
+      {
+        title: 'Topic <urgent> & needs-help',
+        html_url: 'https://github.com/org/repo/discussions/123',
+      },
+      mappingPath
+    );
+
+    const topBlocksText = JSON.stringify(result.blocks);
+    const attachmentBlocksText = JSON.stringify(result.attachments![0].blocks);
+    expect(topBlocksText).toContain(
+      '<https://github.com/org/repo/discussions/123|Topic &lt;urgent&gt; &amp; needs-help>'
+    );
+    expect(attachmentBlocksText).toContain(
+      `Escalate &lt;!here&gt; <@${NEVER_REAL_SLACK_ID_DELTA}> &amp; review`
+    );
+  });
+
   it('should use fallback values when fields are missing', async () => {
     const mappingPath = writeMappingFile({});
     const result: SlackPayload = await buildCommentMessage({}, {}, mappingPath);
@@ -227,12 +276,39 @@ describe('buildAnsweredMessage', () => {
     const attachmentBlocksText = JSON.stringify(result.attachments![0].blocks);
     expect(result.attachments![0].color).toBe('#F6B73C');
     expect(result.text).toContain('How to do X?');
-    expect(topBlocksText).toContain('*Discussion answered* (Q&A)');
+    expect(topBlocksText).toContain('*Discussion answered* (Q&amp;A)');
     expect(topBlocksText).toContain('answered by <https://github.com/answerer|answerer>');
     expect(topBlocksText).toContain('<https://github.com/org/repo/discussions/123|How to do X?>');
     expect(attachmentBlocksText).toContain(`This solves it <@${NEVER_REAL_SLACK_ID_GAMMA}>`);
     expect(attachmentBlocksText).toContain(
       '<https://github.com/org/repo/discussions/123#discussioncomment-789|View answer on GitHub>'
+    );
+  });
+
+  it('should escape mrkdwn control characters in title, category, and body', async () => {
+    const mappingPath = writeMappingFile({ answerer: NEVER_REAL_SLACK_ID_GAMMA });
+    const result: SlackPayload = await buildAnsweredMessage(
+      {
+        body: 'Done <!channel> @answerer & closed',
+        html_url: 'https://github.com/org/repo/discussions/123#discussioncomment-789',
+        user: { login: 'answerer' },
+      },
+      {
+        title: 'How <X> works & why',
+        html_url: 'https://github.com/org/repo/discussions/123',
+        category: { name: 'Q&A <public>' },
+      },
+      mappingPath
+    );
+
+    const topBlocksText = JSON.stringify(result.blocks);
+    const attachmentBlocksText = JSON.stringify(result.attachments![0].blocks);
+    expect(topBlocksText).toContain('*Discussion answered* (Q&amp;A &lt;public&gt;)');
+    expect(topBlocksText).toContain(
+      '<https://github.com/org/repo/discussions/123|How &lt;X&gt; works &amp; why>'
+    );
+    expect(attachmentBlocksText).toContain(
+      `Done &lt;!channel&gt; <@${NEVER_REAL_SLACK_ID_GAMMA}> &amp; closed`
     );
   });
 
