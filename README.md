@@ -1,6 +1,6 @@
 # GitHub Discussions Slack Notifier
 
-This GitHub Action sends Slack notifications when GitHub Discussions are created or commented on.
+This GitHub Action sends Slack notifications when GitHub Discussions are created, answered, or commented on.
 It can convert GitHub `@mentions` into Slack mentions using inline JSON or a mapping file.
 
 ## Features
