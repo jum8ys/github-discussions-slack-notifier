@@ -15,7 +15,7 @@ inputs:
   slack_user_mapping_file:
     description: 'Path to JSON file with GitHub username to Slack user ID mapping.'
     required: false
-    default: '.github/github-username-slack-mapping.json'
+    default: '.github/slack_user_mapping.json'
   slack_user_mapping_json:
     description: 'Inline JSON for GitHub username to Slack user ID mapping. If set, this takes precedence over slack_user_mapping_file.'
     required: false

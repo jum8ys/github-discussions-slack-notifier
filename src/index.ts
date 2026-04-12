@@ -29,7 +29,7 @@ const webhookUrl = process.env.INPUT_SLACK_WEBHOOK_URL ?? process.env.SLACK_WEBH
 const mappingFilePath =
   process.env.INPUT_SLACK_USER_MAPPING_FILE ??
   process.env.SLACK_USER_MAPPING_FILE ??
-  '.github/github-username-slack-mapping.json';
+  '.github/slack_user_mapping.json';
 const mappingJson =
   process.env.INPUT_SLACK_USER_MAPPING_JSON ?? process.env.SLACK_USER_MAPPING_JSON;
 

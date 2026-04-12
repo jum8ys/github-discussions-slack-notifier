@@ -27,7 +27,7 @@ Example value for `SLACK_USER_MAPPING_JSON`:
 
 ### 2. (Optional) Use a repository file instead of secret
 
-Create `.github/github-username-slack-mapping.json` in the repository:
+Create `.github/slack_user_mapping.json` in the repository:
 
 ```json
 {
@@ -53,7 +53,6 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
       - name: Notify Slack
         uses: jum8ys/github-discussions-slack-notifier@v2
         with:
@@ -62,7 +61,7 @@ jobs:
 ```
 
 > [!NOTE]
-> If both `slack_user_mapping_json` and `slack_user_mapping_file` are set, the JSON input takes precedence.
+> If you use `slack_user_mapping_file` instead of `slack_user_mapping_json`, add `actions/checkout@v6` before this action so the file can be read.
 
 ## Action Inputs
 
@@ -70,7 +69,7 @@ jobs:
 | --- | --- | --- | --- | --- |
 | slack_webhook_url | string | yes | - | Slack Incoming Webhook URL |
 | slack_user_mapping_json | string | no | - | Inline JSON for GitHub username -> Slack user ID mapping. Takes precedence over `slack_user_mapping_file` if both are set. |
-| slack_user_mapping_file | string | no | .github/github-username-slack-mapping.json | Path to the GitHub username -> Slack user ID mapping JSON |
+| slack_user_mapping_file | string | no | .github/slack_user_mapping.json | Path to the GitHub username -> Slack user ID mapping JSON |
 
 ## How Mention Conversion Works
 
