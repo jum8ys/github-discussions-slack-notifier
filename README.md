@@ -61,15 +61,15 @@ jobs:
 ```
 
 > [!NOTE]
-> If you use `slack_user_mapping_file` instead of `slack_user_mapping_json`, add `actions/checkout@v6` before this action so the file can be read.
+> If you use `slack_user_mapping_file_path` instead of `slack_user_mapping_json`, add `actions/checkout@v6` before this action so the file can be read.
 
 ## Action Inputs
 
 | Input | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| slack_webhook_url | string | yes | - | Slack Incoming Webhook URL |
-| slack_user_mapping_json | string | no | - | Inline JSON for GitHub username -> Slack user ID mapping. Takes precedence over `slack_user_mapping_file` if both are set. |
-| slack_user_mapping_file | string | no | .github/slack_user_mapping.json | Path to the GitHub username -> Slack user ID mapping JSON |
+| slack_webhook_url | string | yes | - | Slack Incoming Webhook URL. Pass as `${{ secrets.SLACK_WEBHOOK_URL }}` |
+| slack_user_mapping_json | string | no | - | Inline JSON for GitHub username -> Slack user ID mapping. Takes precedence over `slack_user_mapping_file_path` if both are set. Pass as `${{ secrets.SLACK_USER_MAPPING_JSON }}` |
+| slack_user_mapping_file_path | string | no | .github/slack_user_mapping.json | Path to the GitHub username -> Slack user ID mapping JSON |
 
 ## How Mention Conversion Works
 

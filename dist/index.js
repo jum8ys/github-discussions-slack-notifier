@@ -7,11 +7,9 @@ const fs_1 = __importDefault(require("fs"));
 const notifier_js_1 = require("./notifier.js");
 const eventPath = process.env.GITHUB_EVENT_PATH;
 const eventName = process.env.GITHUB_EVENT_NAME;
-const webhookUrl = process.env.INPUT_SLACK_WEBHOOK_URL ?? process.env.SLACK_WEBHOOK_URL;
-const mappingFilePath = process.env.INPUT_SLACK_USER_MAPPING_FILE ??
-    process.env.SLACK_USER_MAPPING_FILE ??
-    '.github/slack_user_mapping.json';
-const mappingJson = process.env.INPUT_SLACK_USER_MAPPING_JSON ?? process.env.SLACK_USER_MAPPING_JSON;
+const webhookUrl = process.env.INPUT_SLACK_WEBHOOK_URL;
+const mappingFilePath = process.env.INPUT_SLACK_USER_MAPPING_FILE_PATH ?? '.github/slack_user_mapping.json';
+const mappingJson = process.env.INPUT_SLACK_USER_MAPPING_JSON;
 if (!webhookUrl) {
     console.error('Missing SLACK_WEBHOOK_URL. Please configure this secret in GitHub or pass slack_webhook_url as an input.');
     process.exit(1);

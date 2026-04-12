@@ -10,14 +10,14 @@ branding:
 
 inputs:
   slack_webhook_url:
-    description: 'Slack Incoming Webhook URL.'
+    description: 'Slack Incoming Webhook URL. Pass from secrets: ${{ secrets.SLACK_WEBHOOK_URL }}'
     required: true
-  slack_user_mapping_file:
+  slack_user_mapping_file_path:
     description: 'Path to JSON file with GitHub username to Slack user ID mapping.'
     required: false
     default: '.github/slack_user_mapping.json'
   slack_user_mapping_json:
-    description: 'Inline JSON for GitHub username to Slack user ID mapping. If set, this takes precedence over slack_user_mapping_file.'
+    description: 'Inline JSON for GitHub username to Slack user ID mapping. If set, this takes precedence over slack_user_mapping_file_path. Pass from secrets: ${{ secrets.SLACK_USER_MAPPING_JSON }}'
     required: false
 
 runs:
