@@ -215,6 +215,10 @@ async function resolveAndSummarizeBody(
     return prefix + normalized;
   }
 
+  if (bodyBudget <= 3) {
+    return `${prefix}${truncate(normalized, bodyBudget)}`;
+  }
+
   return `${prefix}${truncate(normalized, bodyBudget - 3)}...`;
 }
 

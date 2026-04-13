@@ -289,6 +289,28 @@ describe('buildDiscussionMessage', () => {
     expect(block.text.text.length).toBeLessThanOrEqual(3000);
   });
 
+  it.each([
+    { bodyBudget: 1, slackIdLength: 2995 },
+    { bodyBudget: 2, slackIdLength: 2994 },
+  ])(
+    'should stay within 3000 chars when mention prefix leaves only $bodyBudget char budget',
+    async ({ slackIdLength }) => {
+      const longSlackId = 'A'.repeat(slackIdLength);
+      const mappingPath = writeMappingFile({ 'test-user-alpha': longSlackId });
+      const result: SlackPayload = await buildDiscussionMessage(
+        {
+          title: 'Test',
+          body: `@test-user-alpha ${'x'.repeat(4000)}`,
+          html_url: 'https://github.invalid/test-org/test-repo/discussions/1',
+          user: { login: 'testuser' },
+        },
+        mappingPath
+      );
+      const block = result.attachments![0].blocks[0] as { text: { text: string } };
+      expect(block.text.text.length).toBeLessThanOrEqual(3000);
+    }
+  );
+
   it('should use fallback values when fields are missing', async () => {
     const mappingPath = writeMappingFile({});
     const result: SlackPayload = await buildDiscussionMessage({}, mappingPath);

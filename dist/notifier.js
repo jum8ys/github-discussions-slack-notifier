@@ -127,6 +127,9 @@ async function resolveAndSummarizeBody(bodyText, mappingSource) {
     if (normalized.length <= bodyBudget) {
         return prefix + normalized;
     }
+    if (bodyBudget <= 3) {
+        return `${prefix}${truncate(normalized, bodyBudget)}`;
+    }
     return `${prefix}${truncate(normalized, bodyBudget - 3)}...`;
 }
 async function buildDiscussionMessage(discussion, mappingSource) {
