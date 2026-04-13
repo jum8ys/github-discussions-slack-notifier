@@ -57,7 +57,7 @@ describe('index.ts entrypoint', () => {
   });
 
   it('should exit with 0 when no event payload is available', () => {
-    process.env.INPUT_SLACK_WEBHOOK_URL = 'https://hooks.slack.com/test';
+    process.env.INPUT_SLACK_WEBHOOK_URL = 'https://hooks.slack.invalid/test';
     process.env.GITHUB_EVENT_PATH = '/nonexistent/path/event.json';
 
     expect(() => {
@@ -71,7 +71,7 @@ describe('index.ts entrypoint', () => {
 
   it('should ignore unhandled event types', async () => {
     const eventPath = writeEventPayload({ action: 'edited' });
-    process.env.INPUT_SLACK_WEBHOOK_URL = 'https://hooks.slack.com/test';
+    process.env.INPUT_SLACK_WEBHOOK_URL = 'https://hooks.slack.invalid/test';
     process.env.GITHUB_EVENT_PATH = eventPath;
     process.env.GITHUB_EVENT_NAME = 'push';
 

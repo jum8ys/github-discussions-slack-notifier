@@ -44,7 +44,7 @@ describe('sendSlackMessage', () => {
       }
     );
 
-    const result = await sendSlackMessage('https://hooks.slack.com/test', testPayload);
+    const result = await sendSlackMessage('https://hooks.slack.invalid/test', testPayload);
     expect(result).toBe('ok');
     expect(req.write).toHaveBeenCalledWith(JSON.stringify(testPayload));
     expect(req.end).toHaveBeenCalled();
@@ -64,7 +64,7 @@ describe('sendSlackMessage', () => {
       }
     );
 
-    await expect(sendSlackMessage('https://hooks.slack.com/test', testPayload)).rejects.toThrow(
+    await expect(sendSlackMessage('https://hooks.slack.invalid/test', testPayload)).rejects.toThrow(
       /Slack webhook request failed: 500 internal_error/
     );
   });
@@ -76,7 +76,7 @@ describe('sendSlackMessage', () => {
       return req;
     });
 
-    await expect(sendSlackMessage('https://hooks.slack.com/test', testPayload)).rejects.toThrow(
+    await expect(sendSlackMessage('https://hooks.slack.invalid/test', testPayload)).rejects.toThrow(
       'ECONNREFUSED'
     );
   });

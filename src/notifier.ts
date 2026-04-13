@@ -56,15 +56,24 @@ export interface MentionMappingConfig {
 
 export type MentionMappingSource = string | MentionMappingConfig;
 
-export function summarize(text: string | undefined, limit = 200): string {
+// Slack section block text limit: https://api.slack.com/reference/block-kit/blocks#section
+const SLACK_SECTION_TEXT_LIMIT = 3000;
+
+export function summarize(text: string | undefined, limit = SLACK_SECTION_TEXT_LIMIT): string {
   if (!text) return '';
   const normalized = text.replace(/\r\n/g, '\n').trim();
   if (!normalized) return '';
   return normalized.length > limit ? `${normalized.slice(0, limit).trim()}...` : normalized;
 }
 
+function extractSlackMentions(text: string): string[] {
+  const mentions = text.match(/<@\w+>/g) ?? [];
+  return [...new Set(mentions)];
+}
+
 export function extractGitHubMentions(text: string): string[] {
-  const mentions = text.match(/@[\w-]+/g) ?? [];
+  // Negative lookbehind prevents matching email addresses (e.g. user@example.com)
+  const mentions = text.match(/(?<!\w)@[\w-]+/g) ?? [];
   return [...new Set(mentions.map((mention) => mention.slice(1)))];
 }
 
@@ -171,8 +180,42 @@ async function resolveAndSummarizeBody(
   bodyText: string | undefined,
   mappingSource: MentionMappingSource
 ): Promise<string> {
-  const escapedBodyText = escapeMrkdwnText(bodyText ?? '');
-  return summarize(await resolveMentionsToSlack(escapedBodyText, mappingSource));
+  const escaped = escapeMrkdwnText(bodyText ?? '');
+  const resolved = await resolveMentionsToSlack(escaped, mappingSource);
+  const normalized = resolved.replace(/\r\n/g, '\n').trim();
+
+  // Truncate without splitting a Slack mention token (<@USERID>) mid-way
+  const truncate = (text: string, maxLen: number): string =>
+    text
+      .slice(0, maxLen)
+      .replace(/<@[^>]*$/, '')
+      .trim();
+
+  // Collect all unique mentions and place them at the top so they are always
+  // visible even when the body is truncated. Inline mentions remain in the body.
+  const allMentions = extractSlackMentions(normalized);
+  const rawPrefix = allMentions.length > 0 ? `${allMentions.join(' ')}\n` : '';
+
+  // Guard: if mentions alone exceed the limit, truncate the prefix itself
+  const prefix =
+    rawPrefix.length <= SLACK_SECTION_TEXT_LIMIT
+      ? rawPrefix
+      : rawPrefix
+          .slice(0, SLACK_SECTION_TEXT_LIMIT)
+          .replace(/<@[^>]*$/, '')
+          .trim() + '\n';
+
+  const bodyBudget = SLACK_SECTION_TEXT_LIMIT - prefix.length;
+
+  if (bodyBudget <= 0) {
+    return prefix.trim().slice(0, SLACK_SECTION_TEXT_LIMIT);
+  }
+
+  if (normalized.length <= bodyBudget) {
+    return prefix + normalized;
+  }
+
+  return `${prefix}${truncate(normalized, bodyBudget - 3)}...`;
 }
 
 export async function buildDiscussionMessage(
@@ -260,6 +303,7 @@ export function sendSlackMessage(webhookUrl: string, payload: SlackPayload): Pro
       'Content-Type': 'application/json',
       'Content-Length': Buffer.byteLength(body),
     },
+    timeout: 10000,
   };
 
   return new Promise((resolve, reject) => {
@@ -276,6 +320,9 @@ export function sendSlackMessage(webhookUrl: string, payload: SlackPayload): Pro
       });
     });
 
+    req.on('timeout', () => {
+      req.destroy(new Error('Slack webhook request timed out'));
+    });
     req.on('error', reject);
     req.write(body);
     req.end();

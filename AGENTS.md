@@ -32,7 +32,7 @@ Flow: `Actions event → index.ts (env/payload parsing) → notifier.ts (build m
 
 - TypeScript with `"module": "NodeNext"` and `"target": "ES2020"`. Imports use `.js` extensions (`import … from './notifier.js'`).
 - Zero runtime dependencies — only Node.js built-ins (`fs`, `https`, `url`).
-- Action inputs are read from `INPUT_*` environment variables (GitHub Actions convention), with fallback to unprefixed env vars for local testing.
+- Action inputs are read from `INPUT_*` environment variables (GitHub Actions convention).
 - Tests live in `test/` (not `__tests__/`). Jest is configured via `jest.config.js` with `ts-jest` preset.
 - Prettier: single quotes, semicolons, 100-char print width, trailing commas in ES5 positions.
 - ESLint: `@typescript-eslint/recommended` + `eslint-config-prettier`. `no-explicit-any` is warn, unused vars with `_` prefix are allowed.
@@ -58,6 +58,31 @@ Consult these official docs before making implementation changes:
   Workflow syntax, `action.yml` schema, `workflow_call` for reusable workflows, event payloads, and secrets handling.
 - **Slack API** — https://docs.slack.dev/
   Incoming Webhooks payload format, message formatting (mrkdwn), and link/mention syntax (`<@USER_ID>`, `<URL|label>`).
+
+## Branch Strategy
+
+Development uses a short-lived `develop` branch:
+
+1. **Start development** — cut a `develop` branch from `main`:
+   ```bash
+   git checkout main && git pull
+   git checkout -b develop
+   ```
+2. **Develop & test** — commit to `develop`, push, and test with `@develop` in your workflow.
+3. **Merge to main** — squash merge when ready:
+   ```bash
+   git checkout main
+   git merge --squash develop
+   git commit -m "feat: your feature summary (develop @ <short-sha>)"
+   ```
+4. **Delete `develop`** — clean up after merging:
+   ```bash
+   git branch -d develop
+   git push origin --delete develop
+   ```
+5. **Repeat** — create a new `develop` branch for the next development cycle.
+
+> Use `@develop` in your workflow's `uses:` to test before releasing to `main`.
 
 ## Release
 

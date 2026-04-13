@@ -13,7 +13,9 @@ exports.sendSlackMessage = sendSlackMessage;
 const fs_1 = __importDefault(require("fs"));
 const https_1 = __importDefault(require("https"));
 const url_1 = require("url");
-function summarize(text, limit = 200) {
+// Slack section block text limit: https://api.slack.com/reference/block-kit/blocks#section
+const SLACK_SECTION_TEXT_LIMIT = 3000;
+function summarize(text, limit = SLACK_SECTION_TEXT_LIMIT) {
     if (!text)
         return '';
     const normalized = text.replace(/\r\n/g, '\n').trim();
@@ -21,8 +23,13 @@ function summarize(text, limit = 200) {
         return '';
     return normalized.length > limit ? `${normalized.slice(0, limit).trim()}...` : normalized;
 }
+function extractSlackMentions(text) {
+    const mentions = text.match(/<@\w+>/g) ?? [];
+    return [...new Set(mentions)];
+}
 function extractGitHubMentions(text) {
-    const mentions = text.match(/@[\w-]+/g) ?? [];
+    // Negative lookbehind prevents matching email addresses (e.g. user@example.com)
+    const mentions = text.match(/(?<!\w)@[\w-]+/g) ?? [];
     return [...new Set(mentions.map((mention) => mention.slice(1)))];
 }
 function escapeRegExp(str) {
@@ -94,8 +101,33 @@ function buildPayload(summaryText, headerText, body, linkUrl, linkLabel, color) 
     return { text: summaryText, blocks: topBlocks };
 }
 async function resolveAndSummarizeBody(bodyText, mappingSource) {
-    const escapedBodyText = escapeMrkdwnText(bodyText ?? '');
-    return summarize(await resolveMentionsToSlack(escapedBodyText, mappingSource));
+    const escaped = escapeMrkdwnText(bodyText ?? '');
+    const resolved = await resolveMentionsToSlack(escaped, mappingSource);
+    const normalized = resolved.replace(/\r\n/g, '\n').trim();
+    // Truncate without splitting a Slack mention token (<@USERID>) mid-way
+    const truncate = (text, maxLen) => text
+        .slice(0, maxLen)
+        .replace(/<@[^>]*$/, '')
+        .trim();
+    // Collect all unique mentions and place them at the top so they are always
+    // visible even when the body is truncated. Inline mentions remain in the body.
+    const allMentions = extractSlackMentions(normalized);
+    const rawPrefix = allMentions.length > 0 ? `${allMentions.join(' ')}\n` : '';
+    // Guard: if mentions alone exceed the limit, truncate the prefix itself
+    const prefix = rawPrefix.length <= SLACK_SECTION_TEXT_LIMIT
+        ? rawPrefix
+        : rawPrefix
+            .slice(0, SLACK_SECTION_TEXT_LIMIT)
+            .replace(/<@[^>]*$/, '')
+            .trim() + '\n';
+    const bodyBudget = SLACK_SECTION_TEXT_LIMIT - prefix.length;
+    if (bodyBudget <= 0) {
+        return prefix.trim().slice(0, SLACK_SECTION_TEXT_LIMIT);
+    }
+    if (normalized.length <= bodyBudget) {
+        return prefix + normalized;
+    }
+    return `${prefix}${truncate(normalized, bodyBudget - 3)}...`;
 }
 async function buildDiscussionMessage(discussion, mappingSource) {
     const title = escapeMrkdwnText(discussion.title ?? 'No title');
@@ -140,6 +172,7 @@ function sendSlackMessage(webhookUrl, payload) {
             'Content-Type': 'application/json',
             'Content-Length': Buffer.byteLength(body),
         },
+        timeout: 10000,
     };
     return new Promise((resolve, reject) => {
         const req = https_1.default.request(options, (res) => {
@@ -154,6 +187,9 @@ function sendSlackMessage(webhookUrl, payload) {
                     reject(new Error(`Slack webhook request failed: ${res.statusCode} ${response}`));
                 }
             });
+        });
+        req.on('timeout', () => {
+            req.destroy(new Error('Slack webhook request timed out'));
         });
         req.on('error', reject);
         req.write(body);
