@@ -1,6 +1,6 @@
 name: GitHub Discussions Slack Notifier
 
-description: Send Slack notifications when GitHub Discussions are created or discussed. Converts @mentions from GitHub to Slack automatically.
+description: Send Slack notifications when GitHub Discussions are created or discussed. Maps GitHub @mentions to Slack user IDs and surfaces them outside the message attachment for notifications.
 
 author: 'jum8ys'
 

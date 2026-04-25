@@ -79,7 +79,7 @@ describe('index.ts entrypoint', () => {
       require('../src/index');
     });
 
-    await new Promise((r) => setTimeout(r, 100));
+    await new Promise<void>((r) => setImmediate(r));
 
     expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('ignored'));
   });

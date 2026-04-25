@@ -18,8 +18,6 @@ export interface Discussion {
   url?: string;
   user?: User;
   category?: Category;
-  created_at?: string;
-  published_at?: string;
 }
 
 export interface Comment {
@@ -28,7 +26,6 @@ export interface Comment {
   html_url?: string;
   url?: string;
   user?: User;
-  created_at?: string;
 }
 
 export type Answer = Comment;
@@ -63,22 +60,13 @@ export function summarize(text: string | undefined, limit = SLACK_SECTION_TEXT_L
   if (!text) return '';
   const normalized = text.replace(/\r\n/g, '\n').trim();
   if (!normalized) return '';
-  return normalized.length > limit ? `${normalized.slice(0, limit).trim()}...` : normalized;
-}
-
-function extractSlackMentions(text: string): string[] {
-  const mentions = text.match(/<@\w+>/g) ?? [];
-  return [...new Set(mentions)];
+  return normalized.length > limit ? `${normalized.slice(0, limit - 3).trim()}...` : normalized;
 }
 
 export function extractGitHubMentions(text: string): string[] {
   // Negative lookbehind prevents matching email addresses (e.g. user@example.com)
   const mentions = text.match(/(?<!\w)@[\w-]+/g) ?? [];
   return [...new Set(mentions.map((mention) => mention.slice(1)))];
-}
-
-function escapeRegExp(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function escapeMrkdwnText(text: string): string {
@@ -106,36 +94,6 @@ async function loadMentionMapping(
   return JSON.parse(mappingContent) as Record<string, string>;
 }
 
-export async function resolveMentionsToSlack(
-  text: string,
-  mappingSource: MentionMappingSource
-): Promise<string> {
-  const githubMentions = extractGitHubMentions(text);
-  if (githubMentions.length === 0) {
-    return text;
-  }
-
-  try {
-    const mapping = await loadMentionMapping(mappingSource);
-
-    let resolvedText = text;
-    for (const githubUsername of githubMentions) {
-      const slackUserId = mapping[githubUsername];
-      if (slackUserId) {
-        resolvedText = resolvedText.replace(
-          new RegExp(`@${escapeRegExp(githubUsername)}\\b`, 'g'),
-          `<@${slackUserId}>`
-        );
-      }
-    }
-
-    return resolvedText;
-  } catch (error) {
-    console.warn('Failed to resolve mentions to Slack:', error);
-    return text;
-  }
-}
-
 function mrkdwnSection(text: string): SlackBlock {
   return { type: 'section', text: { type: 'mrkdwn', text } };
 }
@@ -148,15 +106,48 @@ function githubUserLink(login: string): string {
   return `<https://github.com/${login}|${login}>`;
 }
 
+function buildBodyText(bodyText: string | undefined): string {
+  const escaped = escapeMrkdwnText(bodyText ?? '');
+  const linked = escaped.replace(/(?<!\w)@([\w-]+)/g, (_, u) => `<https://github.com/${u}|@${u}>`);
+  // If summarize cuts inside a mrkdwn link, strip the incomplete token.
+  // All literal '<' were escaped to '&lt;' above, so any '<' here opens a link.
+  return summarize(linked).replace(/\s*<[^>]*\.\.\.$/, '...');
+}
+
+async function buildMentionsText(
+  bodyText: string | undefined,
+  mappingSource: MentionMappingSource
+): Promise<string> {
+  const githubMentions = extractGitHubMentions(bodyText ?? '');
+  if (githubMentions.length === 0) return '';
+
+  try {
+    const mapping = await loadMentionMapping(mappingSource);
+    return githubMentions
+      .map((username) => {
+        const slackId = mapping[username];
+        return slackId ? `<@${slackId}>` : githubUserLink(username);
+      })
+      .join(' ');
+  } catch (error) {
+    console.warn('Failed to resolve mentions to Slack:', error);
+    return githubMentions.map((u) => githubUserLink(u)).join(' ');
+  }
+}
+
 function buildPayload(
   summaryText: string,
   headerText: string,
+  mentionsText: string,
   body: string,
   linkUrl: string | undefined,
   linkLabel: string,
   color: string
 ): SlackPayload {
   const topBlocks: SlackBlock[] = [mrkdwnSection(headerText)];
+  if (mentionsText) {
+    topBlocks.push(mrkdwnSection(mentionsText));
+  }
 
   if (body) {
     const attachmentBlocks: SlackBlock[] = [mrkdwnSection(body)];
@@ -176,52 +167,6 @@ function buildPayload(
   return { text: summaryText, blocks: topBlocks };
 }
 
-async function resolveAndSummarizeBody(
-  bodyText: string | undefined,
-  mappingSource: MentionMappingSource
-): Promise<string> {
-  const escaped = escapeMrkdwnText(bodyText ?? '');
-  const resolved = await resolveMentionsToSlack(escaped, mappingSource);
-  const normalized = resolved.replace(/\r\n/g, '\n').trim();
-
-  // Truncate without splitting a Slack mention token (<@USERID>) mid-way
-  const truncate = (text: string, maxLen: number): string =>
-    text
-      .slice(0, maxLen)
-      .replace(/<@[^>]*$/, '')
-      .trim();
-
-  // Collect all unique mentions and place them at the top so they are always
-  // visible even when the body is truncated. Inline mentions remain in the body.
-  const allMentions = extractSlackMentions(normalized);
-  const rawPrefix = allMentions.length > 0 ? `${allMentions.join(' ')}\n` : '';
-
-  // Guard: if mentions alone exceed the limit, truncate the prefix itself
-  const prefix =
-    rawPrefix.length <= SLACK_SECTION_TEXT_LIMIT
-      ? rawPrefix
-      : rawPrefix
-          .slice(0, SLACK_SECTION_TEXT_LIMIT)
-          .replace(/<@[^>]*$/, '')
-          .trim() + '\n';
-
-  const bodyBudget = SLACK_SECTION_TEXT_LIMIT - prefix.length;
-
-  if (bodyBudget <= 0) {
-    return prefix.trim().slice(0, SLACK_SECTION_TEXT_LIMIT);
-  }
-
-  if (normalized.length <= bodyBudget) {
-    return prefix + normalized;
-  }
-
-  if (bodyBudget <= 3) {
-    return `${prefix}${truncate(normalized, bodyBudget)}`;
-  }
-
-  return `${prefix}${truncate(normalized, bodyBudget - 3)}...`;
-}
-
 export async function buildDiscussionMessage(
   discussion: Discussion,
   mappingSource: MentionMappingSource
@@ -232,15 +177,15 @@ export async function buildDiscussionMessage(
   const category = discussion.category?.name
     ? ` (${escapeMrkdwnText(discussion.category.name)})`
     : '';
-  const body = await resolveAndSummarizeBody(
-    discussion.body ?? discussion.body_text,
-    mappingSource
-  );
+  const rawBody = discussion.body ?? discussion.body_text;
+  const body = buildBodyText(rawBody);
+  const mentionsText = await buildMentionsText(rawBody, mappingSource);
 
   const header = `:speech_balloon: *New discussion created*${category}  by ${githubUserLink(createdBy)}\n${titleLink(url, title)}`;
   return buildPayload(
     `New discussion: ${title}`,
     header,
+    mentionsText,
     body,
     url,
     'View discussion on GitHub',
@@ -257,12 +202,15 @@ export async function buildCommentMessage(
   const commentUrl = comment.html_url ?? comment.url;
   const discussionUrl = discussion.html_url ?? discussion.url;
   const createdBy = comment.user?.login ?? 'unknown';
-  const body = await resolveAndSummarizeBody(comment.body ?? comment.body_text, mappingSource);
+  const rawBody = comment.body ?? comment.body_text;
+  const body = buildBodyText(rawBody);
+  const mentionsText = await buildMentionsText(rawBody, mappingSource);
 
   const header = `:speech_balloon: *New discussion comment*  by ${githubUserLink(createdBy)}\n${titleLink(discussionUrl, discussionTitle)}`;
   return buildPayload(
     `New comment on: ${discussionTitle}`,
     header,
+    mentionsText,
     body,
     commentUrl,
     'View comment on GitHub',
@@ -282,12 +230,15 @@ export async function buildAnsweredMessage(
   const category = discussion.category?.name
     ? ` (${escapeMrkdwnText(discussion.category.name)})`
     : '';
-  const body = await resolveAndSummarizeBody(answer.body ?? answer.body_text, mappingSource);
+  const rawBody = answer.body ?? answer.body_text;
+  const body = buildBodyText(rawBody);
+  const mentionsText = await buildMentionsText(rawBody, mappingSource);
 
   const header = `:white_check_mark: *Discussion answered*${category}  answered by ${githubUserLink(answeredBy)}\n${titleLink(discussionUrl, discussionTitle)}`;
   return buildPayload(
     `Discussion answered: ${discussionTitle}`,
     header,
+    mentionsText,
     body,
     answerUrl,
     'View answer on GitHub',

@@ -37,6 +37,12 @@ Flow: `Actions event → index.ts (env/payload parsing) → notifier.ts (build m
 - Prettier: single quotes, semicolons, 100-char print width, trailing commas in ES5 positions.
 - ESLint: `@typescript-eslint/recommended` + `eslint-config-prettier`. `no-explicit-any` is warn, unused vars with `_` prefix are allowed.
 
+## Test Data Conventions
+
+- **GitHub usernames** in tests must be UUIDs (e.g. `'e4b97c52-1f3a-4d8e-b206-7a9c3f510d4e'`) — never human-readable names like `test-user-alpha` that could collide with real GitHub accounts. Use named constants prefixed `NEVER_REAL_GH_USER_*`.
+- **URLs** in tests must use the `.invalid` TLD (e.g. `https://github.invalid/...`) which is guaranteed non-resolvable by RFC 2606.
+- **Slack IDs** in tests use the `NEVER_REAL_SLACK_ID_*` constant pattern with clearly fake values.
+
 ## Supported Events
 
 The action handles the following GitHub event types:

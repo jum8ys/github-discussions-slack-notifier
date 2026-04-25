@@ -36,11 +36,12 @@ Execute the following release steps:
    ```
    Stop if anything fails.
 
-6. **Commit** all changes on the current branch (`develop`):
-   ```
-   chore: release vX.Y.Z
+6. **Commit** all changes on the current branch (`develop`). Stage `package.json`, `package-lock.json`, and `dist/`:
+   ```bash
+   git add package.json package-lock.json dist/
+   git commit -m "chore: release vX.Y.Z
 
-   Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+   Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
    ```
 
 7. **Squash merge `develop` into `main`:**
@@ -48,9 +49,22 @@ Execute the following release steps:
    DEVELOP_SHA=$(git rev-parse --short HEAD)
    git checkout main
    git merge --squash develop
-   git commit -m "chore: release vX.Y.Z (develop @ ${DEVELOP_SHA})
+   ```
+   Compose the commit message as follows:
+   - **Subject line**: use the conventional-commit type and scope of the highest-impact change (e.g. `feat:`, `fix:`), followed by a short human-readable summary of *what changed*, then `(develop @ SHA)`. Example: `feat: show Slack mentions outside attachment; link GitHub mentions in body (develop @ e018072)`
+   - **Body**: list each non-trivial commit from `develop` as a bullet (`- <type>: <subject>`), omitting pure style/chore/test commits unless they matter to users.
+   - Append the co-author trailer.
 
-   Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+   Example final message:
+   ```
+   feat: show Slack mentions outside attachment; link GitHub mentions in body (develop @ e018072)
+
+   - feat: move Slack mentions outside attachment, keep GitHub format in body
+   - feat: show all mentions in outer blocks; link unmapped to GitHub profile
+   - feat: link GitHub mentions in body text
+   - fix: prevent mrkdwn link from being split at body truncation boundary
+
+   Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
    ```
 
 8. **Tag and push `main`:**
