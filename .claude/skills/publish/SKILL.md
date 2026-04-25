@@ -36,9 +36,9 @@ Execute the following release steps:
    ```
    Stop if anything fails.
 
-6. **Commit** all changes on the current branch (`develop`). Stage `package.json`, `package-lock.json`, and `dist/`:
+6. **Commit** all changes on the current branch. Stage all tracked modifications (includes `package.json`, `package-lock.json`, `dist/`, and any skill/config files updated during this process):
    ```bash
-   git add package.json package-lock.json dist/
+   git add -u
    git commit -m "chore: release vX.Y.Z
 
    Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
@@ -76,8 +76,8 @@ Execute the following release steps:
    git push -f origin vMAJOR
    ```
 
-9. **Delete `develop` branch:**
+9. **Delete `develop` branch** (use `-D` because squash merge leaves it "unmerged" in git's view):
    ```bash
-   git branch -d develop
+   git branch -D develop
    git push origin --delete develop
    ```
