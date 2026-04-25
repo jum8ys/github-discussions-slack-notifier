@@ -51,13 +51,13 @@ Execute the following release steps:
    git merge --squash develop
    ```
    Compose the commit message as follows:
-   - **Subject line**: use the conventional-commit type and scope of the highest-impact change (e.g. `feat:`, `fix:`), followed by a short human-readable summary of *what changed*, then `(develop @ SHA)`. Example: `feat: show Slack mentions outside attachment; link GitHub mentions in body (develop @ e018072)`
+   - **Subject line**: `release vX.Y.Z: <short human-readable summary of what changed> (develop @ SHA)`. Example: `release v3.2.0: show Slack mentions outside attachment; link GitHub mentions in body (develop @ e018072)`
    - **Body**: list each non-trivial commit from `develop` as a bullet (`- <type>: <subject>`), omitting pure style/chore/test commits unless they matter to users.
    - Append the co-author trailer.
 
    Example final message:
    ```
-   feat: show Slack mentions outside attachment; link GitHub mentions in body (develop @ e018072)
+   release v3.2.0: show Slack mentions outside attachment; link GitHub mentions in body (develop @ e018072)
 
    - feat: move Slack mentions outside attachment, keep GitHub format in body
    - feat: show all mentions in outer blocks; link unmapped to GitHub profile
@@ -81,3 +81,9 @@ Execute the following release steps:
    git branch -D develop
    git push origin --delete develop
    ```
+
+10. **Prepare next `develop` branch** from the released `main`:
+    ```bash
+    git checkout -b develop
+    git push -u origin develop
+    ```
