@@ -22,11 +22,16 @@ npm run format:check   # prettier --check (CI-friendly)
 This repository is a **GitHub Action** (defined in `action.yml`).
 
 - **Entrypoint**: `src/index.ts` → reads `GITHUB_EVENT_PATH`, dispatches to `notifier.ts` builders, then POSTs to Slack.
-- **Core logic**: `src/notifier.ts` — message formatting (`buildDiscussionMessage`, `buildCommentMessage`), text summarization (`summarize`), GitHub-to-Slack mention conversion (`extractGitHubMentions`, `resolveMentionsToSlack`), and the HTTP sender (`sendSlackMessage`).
+- **Core logic**: `src/notifier.ts` — message formatting (`buildDiscussionMessage`, `buildCommentMessage`, `buildAnsweredMessage`), text summarization (`summarize`), GitHub-to-Slack mention conversion (`extractGitHubMentions`, `resolveMentionsToSlack`), webhook sender (`sendSlackMessage`), Bot Token sender (`postSlackApiMessage`).
+- **Thread state**: `src/github.ts` — `extractSlackTs` reads the Slack `ts` from a hidden HTML comment (`<!-- slack-notifier:ts=... -->`) in the Discussion body; `appendSlackTsToDiscussion` stores it via a GitHub GraphQL mutation. No external storage needed.
 - **Mention mapping**: GitHub usernames are mapped to Slack user IDs via `slack_user_mapping_json` (inline JSON, usually from a secret) or `slack_user_mapping_file_path` (default `.github/slack_user_mapping.json`). No Slack API call is made.
-- **Slack transport**: Raw `https.request` to an Incoming Webhook URL — no Slack SDK dependency.
+- **Slack transport (webhook mode)**: `sendSlackMessage` — raw `https.request` to an Incoming Webhook URL. No Slack SDK dependency.
+- **Slack transport (Bot Token mode)**: `postSlackApiMessage` — raw `https.request` to `chat.postMessage`. Returns `ts` for threading. Requires `slack_bot_token` and `slack_channel_id` inputs.
 
-Flow: `Actions event → index.ts (env/payload parsing) → notifier.ts (build message + resolve mentions) → Slack webhook`
+Flows:
+- Webhook mode: `Actions event → index.ts → notifier.ts (build + resolve mentions) → Slack Incoming Webhook`
+- Bot Token / new discussion: `Actions event → index.ts → notifier.ts → chat.postMessage → ts → github.ts (store ts in Discussion body)`
+- Bot Token / comment or answer with stored ts: `Actions event → index.ts → github.ts (extract ts from body) → notifier.ts → chat.postMessage (thread reply)`
 
 ## Conventions
 

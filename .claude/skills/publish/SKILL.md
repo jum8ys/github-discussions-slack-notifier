@@ -39,10 +39,9 @@ Execute the following release steps:
 6. **Commit** all changes on the current branch. Stage all tracked modifications (includes `package.json`, `package-lock.json`, `dist/`, and any skill/config files updated during this process):
    ```bash
    git add -u
-   git commit -m "chore: release vX.Y.Z
-
-   Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+   git commit -m "chore: release vX.Y.Z"
    ```
+   If you are an AI agent, you may optionally append a `Co-Authored-By:` trailer with your model name.
 
 7. **Squash merge `develop` into `main`:**
    ```bash
@@ -53,8 +52,7 @@ Execute the following release steps:
    Compose the commit message as follows:
    - **Subject line**: `release vX.Y.Z: <short human-readable summary of what changed> (develop @ SHA)`. Example: `release v3.2.0: show Slack mentions outside attachment; link GitHub mentions in body (develop @ e018072)`
    - **Body**: list each non-trivial commit from `develop` as a bullet (`- <type>: <subject>`), omitting pure style/chore/test commits unless they matter to users.
-   - Append the co-author trailer.
-
+   - If you are an AI agent, you may optionally append a `Co-Authored-By:` trailer with your model name.
    Example final message:
    ```
    release v3.2.0: show Slack mentions outside attachment; link GitHub mentions in body (develop @ e018072)
@@ -63,8 +61,6 @@ Execute the following release steps:
    - feat: show all mentions in outer blocks; link unmapped to GitHub profile
    - feat: link GitHub mentions in body text
    - fix: prevent mrkdwn link from being split at body truncation boundary
-
-   Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
    ```
 
 8. **Tag and push `main`:**

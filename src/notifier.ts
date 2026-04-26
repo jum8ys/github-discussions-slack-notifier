@@ -16,6 +16,7 @@ export interface Discussion {
   body_text?: string;
   html_url?: string;
   url?: string;
+  node_id?: string;
   user?: User;
   category?: Category;
 }
@@ -44,6 +45,8 @@ export interface SlackPayload {
   text: string;
   blocks?: SlackBlock[];
   attachments?: SlackAttachment[];
+  thread_ts?: string;
+  reply_broadcast?: boolean;
 }
 
 export interface MentionMappingConfig {
@@ -277,6 +280,65 @@ export function sendSlackMessage(webhookUrl: string, payload: SlackPayload): Pro
 
     req.on('timeout', () => {
       req.destroy(new Error('Slack webhook request timed out'));
+    });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+interface SlackApiResponse {
+  ok: boolean;
+  ts?: string;
+  error?: string;
+}
+
+export function postSlackApiMessage(
+  botToken: string,
+  channelId: string,
+  payload: SlackPayload
+): Promise<string> {
+  const body = JSON.stringify({ channel: channelId, ...payload });
+
+  const options: https.RequestOptions = {
+    hostname: 'slack.com',
+    path: '/api/chat.postMessage',
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${botToken}`,
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(body),
+    },
+    timeout: 10000,
+  };
+
+  return new Promise((resolve, reject) => {
+    const req = https.request(options, (res) => {
+      const chunks: Buffer[] = [];
+      res.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      res.on('end', () => {
+        const response = Buffer.concat(chunks).toString('utf8');
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          let parsed: SlackApiResponse;
+          try {
+            parsed = JSON.parse(response) as SlackApiResponse;
+          } catch (error) {
+            reject(new Error(`Failed to parse Slack API response: ${String(error)}`));
+            return;
+          }
+          if (!parsed.ok) {
+            reject(new Error(`Slack API error: ${parsed.error ?? 'unknown'}`));
+          } else {
+            resolve(parsed.ts ?? '');
+          }
+        } else {
+          reject(new Error(`Slack API request failed: ${res.statusCode} ${response}`));
+        }
+      });
+    });
+
+    req.on('timeout', () => {
+      req.destroy(new Error('Slack API request timed out'));
     });
     req.on('error', reject);
     req.write(body);

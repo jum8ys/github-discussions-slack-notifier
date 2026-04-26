@@ -10,8 +10,22 @@ branding:
 
 inputs:
   slack_webhook_url:
-    description: 'Slack Incoming Webhook URL. Pass this value from repository secrets.'
-    required: true
+    description: 'Slack Incoming Webhook URL. Required when slack_bot_token is not provided.'
+    required: false
+  slack_bot_token:
+    description: 'Slack Bot Token (xoxb-...). Required for thread support. When provided, chat.postMessage is used instead of Incoming Webhooks.'
+    required: false
+  slack_channel_id:
+    description: 'Slack channel ID (e.g. C0123ABCDE). Required when slack_bot_token is provided.'
+    required: false
+  thread_mode:
+    description: "Controls how comments appear in Slack. 'channel_and_thread' (default): reply is shown in both the thread and channel feed. 'thread_only': reply appears only in the thread."
+    required: false
+    default: 'channel_and_thread'
+  github_token:
+    description: 'GitHub token used to store the Slack thread ts in the Discussion body. Defaults to the workflow token.'
+    required: false
+    default: '${{ github.token }}'
   slack_user_mapping_file_path:
     description: 'Path to JSON file with GitHub username to Slack user ID mapping.'
     required: false
