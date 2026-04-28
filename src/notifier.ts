@@ -56,6 +56,11 @@ export interface MentionMappingConfig {
 
 export type MentionMappingSource = string | MentionMappingConfig;
 
+const GITHUB_SERVER_URL = (process.env.GITHUB_SERVER_URL ?? 'https://github.com').replace(
+  /\/$/,
+  ''
+);
+
 // Slack section block text limit: https://api.slack.com/reference/block-kit/blocks#section
 const SLACK_SECTION_TEXT_LIMIT = 3000;
 
@@ -106,12 +111,15 @@ function titleLink(url: string | undefined, title: string): string {
 }
 
 function githubUserLink(login: string): string {
-  return `<https://github.com/${login}|${login}>`;
+  return `<${GITHUB_SERVER_URL}/${login}|${login}>`;
 }
 
 function buildBodyText(bodyText: string | undefined): string {
   const escaped = escapeMrkdwnText(bodyText ?? '');
-  const linked = escaped.replace(/(?<!\w)@([\w-]+)/g, (_, u) => `<https://github.com/${u}|@${u}>`);
+  const linked = escaped.replace(
+    /(?<!\w)@([\w-]+)/g,
+    (_, u) => `<${GITHUB_SERVER_URL}/${u}|@${u}>`
+  );
   // If summarize cuts inside a mrkdwn link, strip the incomplete token.
   // All literal '<' were escaped to '&lt;' above, so any '<' here opens a link.
   return summarize(linked).replace(/\s*<[^>]*\.\.\.$/, '...');

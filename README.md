@@ -85,6 +85,7 @@ on:
 
 permissions:
   discussions: write  # required to store the Slack thread ts in the Discussion body
+  contents: read      # required when using actions/checkout with slack_user_mapping_file_path
 
 jobs:
   notify:
@@ -111,6 +112,7 @@ jobs:
 - If a Discussion was created before threading was enabled, the first post-migration event (comment or answer) is sent as a top-level message and its timestamp is saved — all subsequent comments will thread under it automatically.
 - When the first post-migration event is `discussion.answered`, the **answer** message becomes the thread parent. Later comments will appear as replies to the answer, not to the original Discussion.
 - If multiple events fire on a Discussion that has no stored timestamp yet (e.g., several comments posted within seconds of each other), the first few may each be sent as top-level messages before one of them "wins" and becomes the thread parent. Once a timestamp is stored in the Discussion body, subsequent events thread reliably.
+- If a comment is posted immediately after a Discussion is created, the `discussion_comment.created` event may fire before `discussion.created` has finished storing the `ts`. In that case, the comment is sent as a top-level message — not lost, just not threaded. Once `ts` is stored, all subsequent events thread correctly.
 
 > [!IMPORTANT]
 > The action stores the Slack thread timestamp in the Discussion body as a hidden HTML comment like `<!-- slack-notifier:ts=1234567890.123456 -->`. It is invisible in the rendered view but **visible in the Markdown editor**. If a user removes this marker while editing the Discussion, subsequent comments will start a new thread instead of replying to the original one.

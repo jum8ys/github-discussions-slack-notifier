@@ -6,14 +6,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.extractSlackTs = extractSlackTs;
 exports.appendSlackTsToDiscussion = appendSlackTsToDiscussion;
 const https_1 = __importDefault(require("https"));
+const url_1 = require("url");
+const GITHUB_GRAPHQL_URL = process.env.GITHUB_GRAPHQL_URL ?? 'https://api.github.com/graphql';
 const SLACK_TS_RE = /<!--\s*slack-notifier:ts=([0-9]+\.[0-9]+)\s*-->/;
 function extractSlackTs(body) {
     return SLACK_TS_RE.exec(body)?.[1];
 }
 function requestGitHubGraphQL(token, requestBody) {
+    const { hostname, pathname } = new url_1.URL(GITHUB_GRAPHQL_URL);
     const options = {
-        hostname: 'api.github.com',
-        path: '/graphql',
+        hostname,
+        path: pathname,
         method: 'POST',
         headers: {
             Authorization: `Bearer ${token}`,

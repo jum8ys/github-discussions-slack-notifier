@@ -1,4 +1,7 @@
 import https from 'https';
+import { URL } from 'url';
+
+const GITHUB_GRAPHQL_URL = process.env.GITHUB_GRAPHQL_URL ?? 'https://api.github.com/graphql';
 
 const SLACK_TS_RE = /<!--\s*slack-notifier:ts=([0-9]+\.[0-9]+)\s*-->/;
 
@@ -30,9 +33,10 @@ interface UpdateDiscussionData {
 }
 
 function requestGitHubGraphQL(token: string, requestBody: string): Promise<string> {
+  const { hostname, pathname } = new URL(GITHUB_GRAPHQL_URL);
   const options: https.RequestOptions = {
-    hostname: 'api.github.com',
-    path: '/graphql',
+    hostname,
+    path: pathname,
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
