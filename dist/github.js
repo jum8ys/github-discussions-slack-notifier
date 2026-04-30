@@ -12,6 +12,12 @@ const SLACK_TS_RE = /<!--\s*slack-notifier:ts=([0-9]+\.[0-9]+)\s*-->/;
 function extractSlackTs(body) {
     return SLACK_TS_RE.exec(body)?.[1];
 }
+function toErrorMessage(error) {
+    if (error instanceof Error) {
+        return error.message;
+    }
+    return String(error);
+}
 function requestGitHubGraphQL(token, requestBody) {
     const { hostname, pathname } = new url_1.URL(GITHUB_GRAPHQL_URL);
     const options = {
@@ -70,10 +76,16 @@ async function appendSlackTsToDiscussion(token, nodeId, ts) {
         query: getBodyQuery,
         variables: { discussionId: nodeId },
     });
-    const getBodyResponseRaw = await requestGitHubGraphQL(token, getBodyRequest);
+    let getBodyResponseRaw;
+    try {
+        getBodyResponseRaw = await requestGitHubGraphQL(token, getBodyRequest);
+    }
+    catch (error) {
+        throw new Error(`GitHub GraphQL request failed during discussion body query for node ${nodeId}: ${toErrorMessage(error)}`);
+    }
     const getBodyResponse = parseGraphQLResponse(getBodyResponseRaw);
     if (getBodyResponse.errors?.length) {
-        throw new Error(`GitHub GraphQL error: ${getBodyResponse.errors[0].message}`);
+        throw new Error(`GitHub GraphQL error during discussion body query for node ${nodeId}: ${getBodyResponse.errors[0].message}`);
     }
     const currentBody = getBodyResponse.data?.node?.body;
     if (typeof currentBody !== 'string') {
@@ -95,9 +107,15 @@ async function appendSlackTsToDiscussion(token, nodeId, ts) {
         query: updateQuery,
         variables: { discussionId: nodeId, body: newBody },
     });
-    const updateResponseRaw = await requestGitHubGraphQL(token, updateRequest);
+    let updateResponseRaw;
+    try {
+        updateResponseRaw = await requestGitHubGraphQL(token, updateRequest);
+    }
+    catch (error) {
+        throw new Error(`GitHub GraphQL request failed during discussion update for node ${nodeId}: ${toErrorMessage(error)}`);
+    }
     const updateResponse = parseGraphQLResponse(updateResponseRaw);
     if (updateResponse.errors?.length) {
-        throw new Error(`GitHub GraphQL error: ${updateResponse.errors[0].message}`);
+        throw new Error(`GitHub GraphQL error during discussion update for node ${nodeId}: ${updateResponse.errors[0].message}`);
     }
 }

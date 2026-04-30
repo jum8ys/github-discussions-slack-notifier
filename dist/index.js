@@ -49,7 +49,7 @@ async function persistThreadTsIfPossible(discussion, ts) {
         await (0, github_js_1.appendSlackTsToDiscussion)(githubToken, discussion.node_id, ts);
     }
     catch (error) {
-        console.warn('Failed to persist Slack thread ts to discussion body:', error);
+        console.warn('Failed to persist Slack thread ts to discussion body:', error instanceof Error ? error.message : String(error));
     }
 }
 async function main() {

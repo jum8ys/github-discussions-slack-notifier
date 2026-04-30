@@ -275,8 +275,8 @@ describe('index.ts entrypoint', () => {
     expect(mockPost).toHaveBeenCalledTimes(1);
     expect(mockAppend).toHaveBeenCalledTimes(1);
     expect(consoleWarnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to persist Slack thread ts'),
-      expect.any(Error)
+      'Failed to persist Slack thread ts to discussion body:',
+      'GitHub GraphQL request failed: 500'
     );
     expect(mockExit).not.toHaveBeenCalled();
   });

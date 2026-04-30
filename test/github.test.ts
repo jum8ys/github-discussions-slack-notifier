@@ -198,7 +198,9 @@ describe('appendSlackTsToDiscussion', () => {
 
     await expect(
       appendSlackTsToDiscussion(NEVER_REAL_GITHUB_TOKEN, NEVER_REAL_DISCUSSION_NODE_ID, '111.222')
-    ).rejects.toThrow('GitHub GraphQL error: NOT_FOUND');
+    ).rejects.toThrow(
+      `GitHub GraphQL error during discussion body query for node ${NEVER_REAL_DISCUSSION_NODE_ID}: NOT_FOUND`
+    );
   });
 
   it('rejects when update mutation returns errors', async () => {
@@ -215,7 +217,9 @@ describe('appendSlackTsToDiscussion', () => {
 
     await expect(
       appendSlackTsToDiscussion(NEVER_REAL_GITHUB_TOKEN, NEVER_REAL_DISCUSSION_NODE_ID, '111.222')
-    ).rejects.toThrow('GitHub GraphQL error: FORBIDDEN');
+    ).rejects.toThrow(
+      `GitHub GraphQL error during discussion update for node ${NEVER_REAL_DISCUSSION_NODE_ID}: FORBIDDEN`
+    );
   });
 
   it('rejects on non-2xx HTTP status', async () => {
@@ -228,7 +232,11 @@ describe('appendSlackTsToDiscussion', () => {
 
     await expect(
       appendSlackTsToDiscussion(NEVER_REAL_GITHUB_TOKEN, NEVER_REAL_DISCUSSION_NODE_ID, '111.222')
-    ).rejects.toThrow(/GitHub GraphQL request failed: 401/);
+    ).rejects.toThrow(
+      new RegExp(
+        `GitHub GraphQL request failed during discussion body query for node ${NEVER_REAL_DISCUSSION_NODE_ID}: GitHub GraphQL request failed: 401`
+      )
+    );
   });
 
   it('rejects on network error', async () => {
@@ -236,6 +244,8 @@ describe('appendSlackTsToDiscussion', () => {
 
     await expect(
       appendSlackTsToDiscussion(NEVER_REAL_GITHUB_TOKEN, NEVER_REAL_DISCUSSION_NODE_ID, '111.222')
-    ).rejects.toThrow('ECONNREFUSED');
+    ).rejects.toThrow(
+      `GitHub GraphQL request failed during discussion body query for node ${NEVER_REAL_DISCUSSION_NODE_ID}: ECONNREFUSED`
+    );
   });
 });
